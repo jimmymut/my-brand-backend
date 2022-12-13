@@ -1,0 +1,34 @@
+version: 2.1
+
+orbs:
+  #coveralls: coveralls/coveralls@1.0.6
+  coveralls: solven/coveralls@0.0.1
+  node: circleci/node@5.0.2
+
+jobs:
+  build-and-test:
+    docker:
+      - image: cimg/node:16.15
+    steps:
+      - checkout
+      - node/install-packages:
+        pkg-manager: npm
+      - run:
+          name: Install dependencies
+          command: npm install
+      - run:
+          name: Run unit testing
+          environment:
+          TEST_DB: TEST_DB
+          SECRET_KEY: SECRET_KEY
+          CLOUD_NAME: CLOUD_NAME
+          CLOUDINARY_API_KEY: CLOUDINARY_API_KEY
+          CLOUDINARY_API_SECRET: CLOUDINARY_API_SECRET
+          command: npm test
+
+      - coveralls/upload:
+        path: ./coverage/lcov.info
+workflows:
+  test-my-brand-api:
+    jobs:
+      - build-and-test

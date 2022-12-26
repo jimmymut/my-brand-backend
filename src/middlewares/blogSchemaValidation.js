@@ -2,20 +2,25 @@ import {
   validateAddBlogSchema,
   validateUpdateBlogSchema,
   validateBlogCommentSchema,
+
 } from "../validations/blogValidations";
 import mongoose from "mongoose";
+
 
 const validatedAddBlog = async (req, res, next) => {
   const { error, value } = validateAddBlogSchema.validate(req.body, {
     abortEarly: false,
   });
   if (error) {
-    return res.status(400).send(error.details);
+
+    return res.status(400).send(error.message);
+
   }
   req.validatedData = value;
   next();
 };
 const validatedUpdateBlog = async (req, res, next) => {
+
   const id = req.params.id;
   if (!mongoose.Types.ObjectId.isValid(id)) {
     return res.status(400).send("Invalid id");
@@ -33,20 +38,25 @@ const validatedUpdateBlog = async (req, res, next) => {
   );
   if (error) {
     return res.status(400).send(error.message);
+
   }
   req.validatedData = value;
   next();
 };
 const validatedAddComment = async (req, res, next) => {
+
   const id = req.params.id;
   if (!mongoose.Types.ObjectId.isValid(id)) {
     return res.status(400).send("Invalid id");
   }
+
   const { error, value } = validateBlogCommentSchema.validate(req.body, {
     abortEarly: false,
   });
   if (error) {
+
     return res.status(400).send(error.message);
+
   }
   req.validatedData = value;
   next();

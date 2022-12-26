@@ -15,13 +15,16 @@ import {
   validatedUpdateBlog,
   validatedAddComment,
 } from "../../middlewares/blogSchemaValidation";
+
 import upload from "../../utils/multer";
 import { authorized, authorizedUser } from "../../middlewares/authenticate";
 import { isAdmin, isNotAdmin } from "../../middlewares/isAdmin";
 
+
 const blogRouter = express.Router();
 
 blogRouter.get("/", getAllBlogs);
+
 
 blogRouter.post(
   "/",
@@ -35,11 +38,14 @@ blogRouter.get("/:id", getSingleBlog);
 
 blogRouter.patch("/:id", authorized, isAdmin, validatedUpdateBlog, updateBlog);
 
+
 blogRouter.get("/:id/comments", allComments);
 blogRouter.post("/:id/comments", validatedAddComment, addComment);
 
+
 blogRouter.delete("/:id", authorized, isAdmin, deleteBlog);
 blogRouter.put("/:id/likes", authorized, isNotAdmin, likeBlog);
+
 blogRouter.get("/:id/likes", likesOnBlog);
 
 export default blogRouter;

@@ -10,7 +10,8 @@ const PORT = process.env.PORT || 3000;
 mongoose.set("strictQuery", true);
 
 mongoose
-  .connect(process.env.DB_LOCAL_DEV, {
+  .connect(process.env.DATABASE_URI, {
+
     useNewUrlParser: true,
     useUnifiedTopology: true,
   })
@@ -22,13 +23,7 @@ mongoose
     app.use(morgan("dev"));
     app.use(express.urlencoded({ extended: true }));
     app.use(cors());
-    // app.use(
-    //   session({
-    //     secret: process.env.SECRET_KEY,
-    //     resave: false,
-    //     saveUninitialized: false,
-    //   })
-    // );
+
     app.use(passport.initialize());
 
     app.use("/", router);

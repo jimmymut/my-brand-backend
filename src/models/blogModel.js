@@ -13,6 +13,7 @@ const blogSchema = new Schema(
       required: true,
     },
     file: {
+
       public_id: {
         type: String,
         required: true,
@@ -34,6 +35,7 @@ const blogSchema = new Schema(
         },
       },
     ],
+
     comments: [
       {
         type: mongoose.Schema.Types.ObjectId,
@@ -63,6 +65,7 @@ const commentSchema = new Schema({
   },
 });
 
+
 const likeSchema = new Schema(
   {
     userId: {
@@ -83,3 +86,4 @@ const Comment = mongoose.model("Comment", commentSchema);
 const Blog = mongoose.model("Blog", blogSchema);
 
 export { Blog, Comment, Like };
+

@@ -41,7 +41,9 @@ const singleMessage = async (req, res) => {
 const deleteMessage = async (req, res) => {
   try {
     await Message.findOneAndDelete({ _id: req.params.id });
+
     res.status(204).json("Message deleted");
+
   } catch {
     res.status(404).json({ error: "message doesn't exist!" });
   }

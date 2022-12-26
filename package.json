@@ -37,23 +37,29 @@
     "@babel/register": "^7.18.9",
     "bcrypt": "^5.1.0",
     "better-npm-run": "^0.1.1",
+
     "cloudinary": "^1.33.0",
     "cors": "^2.8.5",
     "dotenv": "^16.0.3",
     "express": "^4.18.2",
     "express-session": "^1.17.3",
+
     "joi": "^17.7.0",
     "jsonwebtoken": "^8.5.1",
     "lodash": "^4.17.21",
     "mongoose": "^6.8.0",
     "morgan": "^1.10.0",
+
     "multer": "^1.4.5-lts.1",
+
     "passport": "^0.6.0",
     "passport-jwt": "^4.0.0",
     "passport-local": "^1.0.0"
   },
   "devDependencies": {
+
     "jest": "^29.3.1",
+
     "nodemon": "^2.0.20"
   }
 }

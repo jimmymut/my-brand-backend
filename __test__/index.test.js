@@ -6,18 +6,23 @@ import Message from "../src/models/messagesModel";
 
 import mongoose from "mongoose";
 
+let server;
+
+beforeAll((done) => {
+  server = app.listen(2500, () => console.log("Server is running at 2500"));
+  done();
+});
 beforeEach(async () => {
   await User.deleteMany();
   await Blog.deleteMany();
   await Message.deleteMany();
   await Like.deleteMany();
   await Comment.deleteMany();
-  jest.setTimeout(40000);
 });
-afterAll(async () => {
-  jest.clearAllTimers();
-  await mongoose.disconnect();
-  await mongoose.connection.close();
+afterAll((done) => {
+  mongoose.connection.close();
+  server.close(() => console.log("sever closed"));
+  done();
 });
 
 const image =
@@ -215,7 +220,7 @@ describe("Operations blogs in general", () => {
         });
       expect(errorResponseSave.statusCode).toBe(500);
       jest.spyOn(Blog.prototype, "save").mockClear();
-    });
+    }, 40000);
 
     test("Deleting a blog", async () => {
       await request(app).post("/admins").send({

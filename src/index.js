@@ -28,11 +28,7 @@ if (process.env.NODE_ENV === "development") {
       useNewUrlParser: true,
       useUnifiedTopology: true,
     })
-    .then(() => {
-      app.listen(PORT, () =>
-        console.log("Conneted to testingdb!\nServer is running at", PORT)
-      );
-    })
+    .then(() => console.log("Conneted to testingdb!"))
     .catch((err) => console.log(err));
 } else {
   mongoose

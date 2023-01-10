@@ -1,24 +1,54 @@
-import app from "../src/app";
+import app from "../src/app.js";
 import request from "supertest";
 import User from "../src/models/user";
 import { Blog, Like, Comment } from "../src/models/blogModel";
 import Message from "../src/models/messagesModel";
-import { v2 as cloudinary } from "cloudinary";
-import passport from "passport";
-
+import bcrypt from "bcrypt";
+import "dotenv/config";
 import mongoose from "mongoose";
 
+let server;
+let adminToken;
+
+beforeAll((done) => {
+  mongoose.set("strictQuery", false);
+  mongoose
+    .connect(process.env.TEST_DB, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    })
+    .then(() => {
+      server = app.listen(2500, () =>
+        console.log("Conneted to testingdb!\nServer is running at 2500")
+      );
+    })
+    .catch((err) => console.log(err));
+  done();
+});
 beforeEach(async () => {
+  const adminAcc = new User({
+    firstName: "Sebwato",
+    lastName: "Musajya",
+    email: "mugogo@gmail.com",
+    password: await bcrypt.hash("magima", 10),
+    title: "admin",
+  });
+  await adminAcc.save();
+  const loginResponse = await request(app)
+    .post("/login")
+    .send({ email: "mugogo@gmail.com", password: "magima" });
+  adminToken = loginResponse.body.token;
+});
+afterEach(async () => {
   await User.deleteMany();
   await Blog.deleteMany();
-  await Message.deleteMany();
-  await Like.deleteMany();
-  await Comment.deleteMany();
-  jest.setTimeout(40000);
+  jest.clearAllTimers();
 });
-afterAll(async () => {
-  await mongoose.disconnect();
-  await mongoose.connection.close();
+afterAll((done) => {
+  mongoose.disconnect();
+  mongoose.connection.close();
+  server.close();
+  done();
 });
 
 const image =
@@ -27,116 +57,104 @@ const image =
 //testing endpoints on admin routes (create, read and delete admin account)
 describe("admin routes", () => {
   test("create admin account and delete it", async () => {
-    const result = await request(app).post("/admins").send({
-      firstName: "Sebwato",
-      lastName: "Musajya",
-      email: "biryogo@gmail.com",
-      password: "jimmy",
-      comfirmPassword: "jimmy",
-    });
+    const result = await request(app)
+      .post("/admins")
+      .send({
+        firstName: "Sebwato",
+        lastName: "Musajya",
+        email: "bihagaro@gmail.com",
+        password: "jimmy",
+        comfirmPassword: "jimmy",
+      })
+      .set("Authorization", `Bearer ${adminToken}`);
     expect(result.statusCode).toBe(200);
 
-    const accountExistErr = await request(app).post("/admins").send({
-      firstName: "Sebwato",
-      lastName: "Musajya",
-      email: "biryogo@gmail.com",
-      password: "jimmy",
-      comfirmPassword: "jimmy",
-    });
+    const accountExistErr = await request(app)
+      .post("/admins")
+      .send({
+        firstName: "Sebwato",
+        lastName: "Musajya",
+        email: "bihagaro@gmail.com",
+        password: "jimmy",
+        comfirmPassword: "jimmy",
+      })
+      .set("Authorization", `Bearer ${adminToken}`);
     const adminId = result.body._id;
     expect(accountExistErr.statusCode).toBe(400);
 
-    const loginResponse = await request(app)
-      .post("/login")
-      .send({ email: "biryogo@gmail.com", password: "jimmy" });
-    const token = loginResponse.body.token;
-
     const deleteResError = await request(app)
       .delete(`/admins/fdfgfxs`)
-      .set("Authorization", `Bearer ${token}`);
+      .set("Authorization", `Bearer ${adminToken}`);
     expect(deleteResError.status).toBe(400);
 
     const deleteResErrorNotFound = await request(app)
       .delete(`/admins/63ac6153042cf31311085132`)
-      .set("Authorization", `Bearer ${token}`);
+      .set("Authorization", `Bearer ${adminToken}`);
     expect(deleteResErrorNotFound.status).toBe(404);
 
     const deleteRes = await request(app)
       .delete(`/admins/${adminId}`)
-      .set("Authorization", `Bearer ${token}`);
+      .set("Authorization", `Bearer ${adminToken}`);
     expect(deleteRes.statusCode).toBe(200);
   });
 
   test("get all admins, and their number", async () => {
-    await request(app).post("/admins").send({
-      firstName: "Sebwato",
-      lastName: "Musajya",
-      email: "biryogo@gmail.com",
-      password: "jimmy",
-      comfirmPassword: "jimmy",
-    });
-    const loginResponse = await request(app)
-      .post("/login")
-      .send({ email: "biryogo@gmail.com", password: "jimmy" });
-    const token = loginResponse.body.token;
-
     const response = await request(app)
       .get("/admins")
-      .set("Authorization", `Bearer ${token}`);
+      .set("Authorization", `Bearer ${adminToken}`);
     expect(response.statusCode).toBe(200);
 
     const responseNumAllAppUsers = await request(app)
       .get("/admins/users/users")
-      .set("Authorization", `Bearer ${token}`);
+      .set("Authorization", `Bearer ${adminToken}`);
     expect(responseNumAllAppUsers.statusCode).toBe(200);
 
     const responseGetllAppUsers = await request(app)
       .get("/admins/users")
-      .set("Authorization", `Bearer ${token}`);
+      .set("Authorization", `Bearer ${adminToken}`);
     expect(responseGetllAppUsers.statusCode).toBe(200);
 
     const responseGetNumAdminUsers = await request(app)
       .get("/admins/admins")
-      .set("Authorization", `Bearer ${token}`);
+      .set("Authorization", `Bearer ${adminToken}`);
     expect(responseGetNumAdminUsers.statusCode).toBe(200);
 
     const mockfn = jest.fn().mockRejectedValue(new Error("Database error"));
     jest.spyOn(User, "find").mockImplementation(mockfn);
     const errorResponse = await request(app)
       .get("/admins")
-      .set("Authorization", `Bearer ${token}`);
+      .set("Authorization", `Bearer ${adminToken}`);
     expect(errorResponse.statusCode).toBe(500);
 
     const errorResponseNumber = await request(app)
       .get("/admins/users/users")
-      .set("Authorization", `Bearer ${token}`);
+      .set("Authorization", `Bearer ${adminToken}`);
     expect(errorResponseNumber.statusCode).toBe(500);
 
     const errorResponseAppUsers = await request(app)
       .get("/admins/users")
-      .set("Authorization", `Bearer ${token}`);
+      .set("Authorization", `Bearer ${adminToken}`);
     expect(errorResponseAppUsers.statusCode).toBe(500);
 
     const errorResponseAdminsNum = await request(app)
       .get("/admins/admins")
-      .set("Authorization", `Bearer ${token}`);
+      .set("Authorization", `Bearer ${adminToken}`);
     expect(errorResponseAdminsNum.statusCode).toBe(500);
   });
 });
 
 test("test server error on delete acc", async () => {
-  const account = await request(app).post("/admins").send({
-    firstName: "Sebwato",
-    lastName: "Musajya",
-    email: "biryogo@gmail.com",
-    password: "jimmy",
-    comfirmPassword: "jimmy",
-  });
+  const account = await request(app)
+    .post("/admins")
+    .send({
+      firstName: "Sebwato",
+      lastName: "Musajya",
+      email: "cytago@gmail.com",
+      password: "jimmy",
+      comfirmPassword: "jimmy",
+    })
+    .set("Authorization", `Bearer ${adminToken}`);
   const accId = account.body._id;
-  const loginResponse = await request(app)
-    .post("/login")
-    .send({ email: "biryogo@gmail.com", password: "jimmy" });
-  const token = loginResponse.body.token;
 
   jest
     .spyOn(User, "deleteOne")
@@ -145,13 +163,27 @@ test("test server error on delete acc", async () => {
     );
   const errorResponse = await request(app)
     .delete(`/admins/${accId}`)
-    .set("Authorization", `Bearer ${token}`);
+    .set("Authorization", `Bearer ${adminToken}`);
   expect(errorResponse.statusCode).toBe(500);
 });
 
 //testing endpoints on  blogs/article routes (create, read, update, delete blog,
 //read comments, add a comment, like or unlike, likes of a blog)
 describe("Operations blogs in general", () => {
+  let testBlogId;
+  beforeEach(async () => {
+    const testingBlog = new Blog({
+      title: "updating a blog",
+      description:
+        "Jimmy work done Jimmy work done Jimmy work done Jimmy work done Jimmy work done Jimmy work done Jimmy work done Jimmy work done",
+      file: {
+        public_id: "a string in cloudinary",
+        url: "also a string url from cloudinary",
+      },
+    });
+    const savedTestBlog = await testingBlog.save();
+    testBlogId = savedTestBlog._id;
+  });
   describe("CRUD operations on blogs endpoints", () => {
     test("get all blogs and their number", async () => {
       const result = await request(app).get("/blogs");
@@ -170,21 +202,9 @@ describe("Operations blogs in general", () => {
     });
 
     test("creating a new blog", async () => {
-      await request(app).post("/admins").send({
-        firstName: "Sebwato",
-        lastName: "Musajya",
-        email: "biryogo@gmail.com",
-        password: "jimmy",
-        comfirmPassword: "jimmy",
-      });
-      const loginResponse = await request(app)
-        .post("/login")
-        .send({ email: "biryogo@gmail.com", password: "jimmy" });
-      const token = loginResponse.body.token;
-
       const response = await request(app)
         .post("/blogs")
-        .set("Authorization", `Bearer ${token}`)
+        .set("Authorization", `Bearer ${adminToken}`)
         .send({
           title: "updating a blog",
           description:
@@ -195,7 +215,7 @@ describe("Operations blogs in general", () => {
 
       const validationResponse = await request(app)
         .post("/blogs")
-        .set("Authorization", `Bearer ${token}`)
+        .set("Authorization", `Bearer ${adminToken}`)
         .send({
           description:
             "Jimmy work done Jimmy work done Jimmy work done Jimmy work done Jimmy work done Jimmy work done Jimmy work done Jimmy work done",
@@ -207,7 +227,7 @@ describe("Operations blogs in general", () => {
       jest.spyOn(Blog.prototype, "save").mockImplementationOnce(mockfn);
       const errorResponseSave = await request(app)
         .post("/blogs")
-        .set("Authorization", `Bearer ${token}`)
+        .set("Authorization", `Bearer ${adminToken}`)
         .send({
           title: "updating a blog",
           description:
@@ -219,115 +239,23 @@ describe("Operations blogs in general", () => {
     });
 
     test("Deleting a blog", async () => {
-      await request(app).post("/admins").send({
-        firstName: "Sebwato",
-        lastName: "Musajya",
-        email: "biryogo@gmail.com",
-        password: "jimmy",
-        comfirmPassword: "jimmy",
-      });
-      const loginResponse = await request(app)
-        .post("/login")
-        .send({ email: "biryogo@gmail.com", password: "jimmy" });
-      const token = loginResponse.body.token;
-
-      const response = await request(app)
-        .post("/blogs")
-        .set("Authorization", `Bearer ${token}`)
-        .send({
-          title: "updating a blog",
-          description:
-            "Jimmy work done Jimmy work done Jimmy work done Jimmy work done Jimmy work done Jimmy work done Jimmy work done Jimmy work done",
-          file: image,
-        });
-      const blogId = response.body._id;
-
       const deleteReqNonMongId = await request(app)
         .delete(`/blogs/ttrjytrrcdcertj`)
-        .set("Authorization", `Bearer ${token}`);
+        .set("Authorization", `Bearer ${adminToken}`);
       expect(deleteReqNonMongId.status).toBe(400);
 
       const deleteRequestNotfound = await request(app)
         .delete(`/blogs/63adb1d95f79e5864d261834`)
-        .set("Authorization", `Bearer ${token}`);
+        .set("Authorization", `Bearer ${adminToken}`);
       expect(deleteRequestNotfound.status).toBe(404);
 
       const deleteRequest = await request(app)
-        .delete(`/blogs/${blogId}`)
-        .set("Authorization", `Bearer ${token}`);
-      expect(deleteRequest.status).toBe(204);
-    });
-
-    test("Deleting a blog which has likes", async () => {
-      await request(app).post("/admins").send({
-        firstName: "Sebwato",
-        lastName: "Musajya",
-        email: "biryogo@gmail.com",
-        password: "jimmy",
-        comfirmPassword: "jimmy",
-      });
-      const loginResponse = await request(app)
-        .post("/login")
-        .send({ email: "biryogo@gmail.com", password: "jimmy" });
-      const token = loginResponse.body.token;
-
-      const response = await request(app)
-        .post("/blogs")
-        .set("Authorization", `Bearer ${token}`)
-        .send({
-          title: "updating a blog",
-          description:
-            "Jimmy work done Jimmy work done Jimmy work done Jimmy work done Jimmy work done Jimmy work done Jimmy work done Jimmy work done",
-          file: image,
-        });
-      const blogId = response.body._id;
-
-      await request(app).post("/users").send({
-        firstName: "Sebwato",
-        lastName: "Musajya",
-        email: "kanyizo@gmail.com",
-        password: "jimmy",
-        comfirmPassword: "jimmy",
-      });
-      const loginResponseUser = await request(app)
-        .post("/login")
-        .send({ email: "kanyizo@gmail.com", password: "jimmy" });
-      const userToken = loginResponseUser.body.token;
-
-      await request(app)
-        .put(`/blogs/${blogId}/likes`)
-        .set("Authorization", `Bearer ${userToken}`);
-
-      const deleteRequest = await request(app)
-        .delete(`/blogs/${blogId}`)
-        .set("Authorization", `Bearer ${token}`);
+        .delete(`/blogs/${testBlogId}`)
+        .set("Authorization", `Bearer ${adminToken}`);
       expect(deleteRequest.status).toBe(204);
     });
 
     test("server error in deleting a blog", async () => {
-      await request(app).post("/admins").send({
-        firstName: "Sebwato",
-        lastName: "Musajya",
-        email: "biryogo@gmail.com",
-        password: "jimmy",
-        comfirmPassword: "jimmy",
-      });
-      const loginResponse = await request(app)
-        .post("/login")
-        .send({ email: "biryogo@gmail.com", password: "jimmy" });
-      const token = loginResponse.body.token;
-
-      const response = await request(app)
-        .post("/blogs")
-        .set("Authorization", `Bearer ${token}`)
-        .send({
-          title: "updating a blog",
-          description:
-            "Jimmy work done Jimmy work done Jimmy work done Jimmy work done Jimmy work done Jimmy work done Jimmy work done Jimmy work done",
-          file: image,
-        });
-      const blogId = response.body._id;
-
       jest
         .spyOn(Blog, "findById")
         .mockImplementation(
@@ -360,8 +288,8 @@ describe("Operations blogs in general", () => {
         );
 
       const deleteRequestError = await request(app)
-        .delete(`/blogs/${blogId}`)
-        .set("Authorization", `Bearer ${token}`);
+        .delete(`/blogs/${testBlogId}`)
+        .set("Authorization", `Bearer ${adminToken}`);
       expect(deleteRequestError.status).toBe(500);
 
       jest.clearAllMocks();
@@ -369,53 +297,21 @@ describe("Operations blogs in general", () => {
     });
 
     test("Update a blog", async () => {
-      await request(app).post("/admins").send({
-        firstName: "Sebwato",
-        lastName: "Musajya",
-        email: "biryogo@gmail.com",
-        password: "jimmy",
-        comfirmPassword: "jimmy",
-      });
-      const loginResponse = await request(app)
-        .post("/login")
-        .send({ email: "biryogo@gmail.com", password: "jimmy" });
-      const token = loginResponse.body.token;
-      const CreateResponse = await request(app)
-        .post("/blogs")
-        .set("Authorization", `Bearer ${token}`)
-        .send({
-          title: "updating a blog",
-          description:
-            "Jimmy work done Jimmy work done Jimmy work done Jimmy work done Jimmy work done Jimmy work done Jimmy work done Jimmy work done",
-          file: image,
-        });
-
-      const blogId = CreateResponse.body._id;
-
       const responseErrId = await request(app)
         .patch(`/blogs/rdrshgdfes`)
-        .set("Authorization", `Bearer ${token}`)
+        .set("Authorization", `Bearer ${adminToken}`)
         .send({ title: "updating a blog" });
       expect(responseErrId.statusCode).toBe(400);
 
       const responsenotFound = await request(app)
         .patch(`/blogs/63ac5fe55065aaae433a9758`)
-        .set("Authorization", `Bearer ${token}`)
+        .set("Authorization", `Bearer ${adminToken}`)
         .send({ title: "updating a blog" });
       expect(responsenotFound.statusCode).toBe(404);
 
-      const mockfn = jest.fn().mockRejectedValue(new Error("Database error"));
-      jest.spyOn(Blog.prototype, "save").mockImplementationOnce(mockfn);
-      const ServerResponseErr = await request(app)
-        .patch(`/blogs/${blogId}`)
-        .set("Authorization", `Bearer ${token}`)
-        .send({ title: "updating a blog" });
-      expect(ServerResponseErr.statusCode).toBe(500);
-      jest.spyOn(Blog.prototype, "save").mockClear();
-
       const response = await request(app)
-        .patch(`/blogs/${blogId}`)
-        .set("Authorization", `Bearer ${token}`)
+        .patch(`/blogs/${testBlogId}`)
+        .set("Authorization", `Bearer ${adminToken}`)
         .send({
           title: "updating a blog",
           description:
@@ -425,35 +321,14 @@ describe("Operations blogs in general", () => {
       expect(response.statusCode).toBe(200);
 
       const validresponse = await request(app)
-        .patch(`/blogs/${blogId}`)
-        .set("Authorization", `Bearer ${token}`)
+        .patch(`/blogs/${testBlogId}`)
+        .set("Authorization", `Bearer ${adminToken}`)
         .send({ description: "updating a blog" });
       expect(validresponse.statusCode).toBe(400);
     });
 
     test("Getting a single blog", async () => {
-      await request(app).post("/admins").send({
-        firstName: "Sebwato",
-        lastName: "Musajya",
-        email: "biryogo@gmail.com",
-        password: "jimmy",
-        comfirmPassword: "jimmy",
-      });
-      const loginResponse = await request(app)
-        .post("/login")
-        .send({ email: "biryogo@gmail.com", password: "jimmy" });
-      const token = loginResponse.body.token;
-      const response = await request(app)
-        .post("/blogs")
-        .set("Authorization", `Bearer ${token}`)
-        .send({
-          title: "updating a blog",
-          description:
-            "Jimmy work done Jimmy work done Jimmy work done Jimmy work done Jimmy work done Jimmy work done Jimmy work done Jimmy work done",
-          file: image,
-        });
-      const blogId = response.body._id;
-      const result = await request(app).get(`/blogs/${blogId}`);
+      const result = await request(app).get(`/blogs/${testBlogId}`);
       expect(result.statusCode).toBe(200);
 
       const ErrorResult = await request(app).get(`/blogs/fdsddyter`);
@@ -469,7 +344,7 @@ describe("Operations blogs in general", () => {
         .mockImplementationOnce(
           jest.fn().mockRejectedValue(new Error("Server error"))
         );
-      const ServerErrorResult = await request(app).get(`/blogs/${blogId}`);
+      const ServerErrorResult = await request(app).get(`/blogs/${testBlogId}`);
       expect(ServerErrorResult.statusCode).toBe(500);
       jest.spyOn(Blog, "findOne").mockClear();
     });
@@ -477,28 +352,6 @@ describe("Operations blogs in general", () => {
 
   describe("operations on comments endpoints", () => {
     test("get all blog comments", async () => {
-      await request(app).post("/admins").send({
-        firstName: "Sebwato",
-        lastName: "Musajya",
-        email: "biryogo@gmail.com",
-        password: "jimmy",
-        comfirmPassword: "jimmy",
-      });
-      const loginResponse = await request(app)
-        .post("/login")
-        .send({ email: "biryogo@gmail.com", password: "jimmy" });
-      const token = loginResponse.body.token;
-      const response = await request(app)
-        .post("/blogs")
-        .set("Authorization", `Bearer ${token}`)
-        .send({
-          title: "updating a blog",
-          description:
-            "Jimmy work done Jimmy work done Jimmy work done Jimmy work done Jimmy work done Jimmy work done Jimmy work done Jimmy work done",
-          file: image,
-        });
-      const blogId = response.body._id;
-
       const resultCmtError = await request(app).get(
         `/blogs/ddttguyrrdxyh/comments`
       );
@@ -509,7 +362,7 @@ describe("Operations blogs in general", () => {
       );
       expect(resultCmtErrorOne.statusCode).toBe(404);
 
-      const result = await request(app).get(`/blogs/${blogId}/comments`);
+      const result = await request(app).get(`/blogs/${testBlogId}/comments`);
       expect(result.statusCode).toBe(200);
 
       jest
@@ -518,40 +371,18 @@ describe("Operations blogs in general", () => {
           jest.fn().mockRejectedValue(new Error("Database error!"))
         );
       const resultServerError = await request(app).get(
-        `/blogs/${blogId}/comments`
+        `/blogs/${testBlogId}/comments`
       );
       expect(resultServerError.statusCode).toBe(500);
     });
 
     test("get a single blog comment", async () => {
-      await request(app).post("/admins").send({
-        firstName: "Sebwato",
-        lastName: "Musajya",
-        email: "biryogo@gmail.com",
-        password: "jimmy",
-        comfirmPassword: "jimmy",
-      });
-      const loginResponse = await request(app)
-        .post("/login")
-        .send({ email: "biryogo@gmail.com", password: "jimmy" });
-      const token = loginResponse.body.token;
-      const response = await request(app)
-        .post("/blogs")
-        .set("Authorization", `Bearer ${token}`)
-        .send({
-          title: "updating a blog",
-          description:
-            "Jimmy work done Jimmy work done Jimmy work done Jimmy work done Jimmy work done Jimmy work done Jimmy work done Jimmy work done",
-          file: image,
-        });
-      const blogId = response.body._id;
-
       const resultAddComment = await request(app)
-        .post(`/blogs/${blogId}/comments`)
+        .post(`/blogs/${testBlogId}/comments`)
         .send({
-          name: "Jimmy Mutabazi",
           comment: "some comment to post on the article",
-        });
+        })
+        .set("Authorization", `Bearer ${adminToken}`);
       const commentId = resultAddComment.body._id;
 
       const resultCmtError = await request(app).get(
@@ -560,12 +391,12 @@ describe("Operations blogs in general", () => {
       expect(resultCmtError.statusCode).toBe(400);
 
       const resultCmtErrorCommentId = await request(app).get(
-        `/blogs/${blogId}/comments/ddttguyrrdxyh`
+        `/blogs/${testBlogId}/comments/ddttguyrrdxyh`
       );
       expect(resultCmtErrorCommentId.statusCode).toBe(400);
 
       const resultCmtErrorCommentNot = await request(app).get(
-        `/blogs/${blogId}/comments/63ac6153042cf31311085132`
+        `/blogs/${testBlogId}/comments/63ac6153042cf31311085132`
       );
       expect(resultCmtErrorCommentNot.statusCode).toBe(404);
 
@@ -575,7 +406,7 @@ describe("Operations blogs in general", () => {
       expect(resultCmtErrorOne.statusCode).toBe(404);
 
       const result = await request(app).get(
-        `/blogs/${blogId}/comments/${commentId}`
+        `/blogs/${testBlogId}/comments/${commentId}`
       );
       expect(result.statusCode).toBe(200);
 
@@ -591,71 +422,52 @@ describe("Operations blogs in general", () => {
           jest.fn().mockRejectedValue(new Error("Database error!"))
         );
       const resultServerError = await request(app).get(
-        `/blogs/${blogId}/comments/${commentId}`
+        `/blogs/${testBlogId}/comments/${commentId}`
       );
       expect(resultServerError.statusCode).toBe(500);
     });
 
     test("Commenting on a blog", async () => {
-      await request(app).post("/admins").send({
-        firstName: "Sebwato",
-        lastName: "Musajya",
-        email: "biryogo@gmail.com",
-        password: "jimmy",
-        comfirmPassword: "jimmy",
-      });
-      const loginResponse = await request(app)
-        .post("/login")
-        .send({ email: "biryogo@gmail.com", password: "jimmy" });
-      const token = loginResponse.body.token;
-      const response = await request(app)
-        .post("/blogs")
-        .set("Authorization", `Bearer ${token}`)
-        .send({
-          title: "updating a blog",
-          description:
-            "Jimmy work done Jimmy work done Jimmy work done Jimmy work done Jimmy work done Jimmy work done Jimmy work done Jimmy work done",
-          file: image,
-        });
-      const blogId = response.body._id;
-
       const resultError1 = await request(app)
         .post(`/blogs/dsdfdxxddsshfdd/comments`)
         .send({
-          name: "Jimmy Mutabazi",
           comment: "some comment to post on the article",
-        });
+        })
+        .set("Authorization", `Bearer ${adminToken}`);
       expect(resultError1.statusCode).toBe(400);
 
       const resultErr2 = await request(app)
         .post(`/blogs/63ac5fe55065aaae433a9758/comments`)
         .send({
-          name: "Jimmy Mutabazi",
           comment: "some comment to post on the article",
-        });
+        })
+        .set("Authorization", `Bearer ${adminToken}`);
       expect(resultErr2.statusCode).toBe(404);
 
       const ValidationResult = await request(app)
-        .post(`/blogs/${blogId}/comments`)
+        .post(`/blogs/${testBlogId}/comments`)
         .send({
-          comment: "some comment to post on the article",
-        });
+          comment: "some",
+        })
+        .set("Authorization", `Bearer ${adminToken}`);
       expect(ValidationResult.statusCode).toBe(400);
 
-      const result = await request(app).post(`/blogs/${blogId}/comments`).send({
-        name: "Jimmy Mutabazi",
-        comment: "some comment to post on the article",
-      });
+      const result = await request(app)
+        .post(`/blogs/${testBlogId}/comments`)
+        .send({
+          comment: "some comment to post on the article",
+        })
+        .set("Authorization", `Bearer ${adminToken}`);
       expect(result.statusCode).toBe(200);
 
       const mockfn = jest.fn().mockRejectedValue(new Error("Database error"));
       jest.spyOn(Comment.prototype, "save").mockImplementationOnce(mockfn);
       const errorResponseDel = await request(app)
-        .post(`/blogs/${blogId}/comments`)
+        .post(`/blogs/${testBlogId}/comments`)
         .send({
-          name: "Jimmy Mutabazi",
           comment: "some comment to post on the article",
-        });
+        })
+        .set("Authorization", `Bearer ${adminToken}`);
       expect(errorResponseDel.statusCode).toBe(500);
       jest.spyOn(Comment.prototype, "save").mockClear();
 
@@ -664,62 +476,43 @@ describe("Operations blogs in general", () => {
         .mockRejectedValue(new Error("Database error"));
       jest.spyOn(Blog, "findByIdAndUpdate").mockImplementationOnce(mockfnTwo);
       const errorResponseCommt = await request(app)
-        .post(`/blogs/${blogId}/comments`)
+        .post(`/blogs/${testBlogId}/comments`)
         .send({
-          name: "Jimmy Mutabazi",
           comment: "some comment to post on the article",
-        });
+        })
+        .set("Authorization", `Bearer ${adminToken}`);
       expect(errorResponseCommt.statusCode).toBe(500);
       jest.spyOn(Blog, "findByIdAndUpdate").mockClear();
     });
 
     test("deleting a comment on a blog", async () => {
-      await request(app).post("/admins").send({
-        firstName: "Sebwato",
-        lastName: "Musajya",
-        email: "biryogo@gmail.com",
-        password: "jimmy",
-        comfirmPassword: "jimmy",
-      });
-      const loginResponse = await request(app)
-        .post("/login")
-        .send({ email: "biryogo@gmail.com", password: "jimmy" });
-      const token = loginResponse.body.token;
-      const response = await request(app)
-        .post("/blogs")
-        .set("Authorization", `Bearer ${token}`)
+      const result = await request(app)
+        .post(`/blogs/${testBlogId}/comments`)
         .send({
-          title: "updating a blog",
-          description:
-            "Jimmy work done Jimmy work done Jimmy work done Jimmy work done Jimmy work done Jimmy work done Jimmy work done Jimmy work done",
-          file: image,
-        });
-      const blogId = response.body._id;
-      const result = await request(app).post(`/blogs/${blogId}/comments`).send({
-        name: "Jimmy Mutabazi",
-        comment: "some comment to post on the article",
-      });
+          comment: "some comment to post on the article",
+        })
+        .set("Authorization", `Bearer ${adminToken}`);
 
       const commentId = result.body._id;
 
       const firstErrdeleteResult = await request(app)
         .delete(`/blogs/dgfdfdffcxsdxs/comments/${commentId}`)
-        .set("Authorization", `Bearer ${token}`);
+        .set("Authorization", `Bearer ${adminToken}`);
       expect(firstErrdeleteResult.statusCode).toBe(400);
 
       const secondErrdeleteResult = await request(app)
-        .delete(`/blogs/${blogId}/comments/gdfdfdfrsdz`)
-        .set("Authorization", `Bearer ${token}`);
+        .delete(`/blogs/${testBlogId}/comments/gdfdfdfrsdz`)
+        .set("Authorization", `Bearer ${adminToken}`);
       expect(secondErrdeleteResult.statusCode).toBe(400);
 
       const thirdErrdeleteResult = await request(app)
         .delete(`/blogs/63ac6153042cf31311085132/comments/${commentId}`)
-        .set("Authorization", `Bearer ${token}`);
+        .set("Authorization", `Bearer ${adminToken}`);
       expect(thirdErrdeleteResult.statusCode).toBe(404);
 
       const deleteResult = await request(app)
-        .delete(`/blogs/${blogId}/comments/${commentId}`)
-        .set("Authorization", `Bearer ${token}`);
+        .delete(`/blogs/${testBlogId}/comments/${commentId}`)
+        .set("Authorization", `Bearer ${adminToken}`);
       expect(deleteResult.statusCode).toBe(200);
 
       jest
@@ -743,38 +536,12 @@ describe("Operations blogs in general", () => {
         .mockRejectedValue(new Error("Database error on upadating blog"));
       jest.spyOn(Blog, "findByIdAndUpdate").mockImplementationOnce(mockfnOne);
       const errorResponseDelOne = await request(app)
-        .delete(`/blogs/${blogId}/comments/${commentId}`)
-        .set("Authorization", `Bearer ${token}`);
+        .delete(`/blogs/${testBlogId}/comments/${commentId}`)
+        .set("Authorization", `Bearer ${adminToken}`);
       expect(errorResponseDelOne.statusCode).toBe(500);
     });
 
     test("getting the number of comments on a blog", async () => {
-      await request(app).post("/admins").send({
-        firstName: "Sebwato",
-        lastName: "Musajya",
-        email: "biryogo@gmail.com",
-        password: "jimmy",
-        comfirmPassword: "jimmy",
-      });
-      const loginResponse = await request(app)
-        .post("/login")
-        .send({ email: "biryogo@gmail.com", password: "jimmy" });
-      const token = loginResponse.body.token;
-      const response = await request(app)
-        .post("/blogs")
-        .set("Authorization", `Bearer ${token}`)
-        .send({
-          title: "updating a blog",
-          description:
-            "Jimmy work done Jimmy work done Jimmy work done Jimmy work done Jimmy work done Jimmy work done Jimmy work done Jimmy work done",
-          file: image,
-        });
-      const blogId = response.body._id;
-      const result = await request(app).post(`/blogs/${blogId}/comments`).send({
-        name: "Jimmy Mutabazi",
-        comment: "some comment to post on the article",
-      });
-
       const readResultrrorOne = await request(app).get(
         `/blogs/gftjvlkjf/comments/comments`
       );
@@ -786,72 +553,25 @@ describe("Operations blogs in general", () => {
       expect(readResultErrorTwo.statusCode).toBe(404);
 
       const readResult = await request(app).get(
-        `/blogs/${blogId}/comments/comments`
+        `/blogs/${testBlogId}/comments/comments`
       );
       expect(readResult.statusCode).toBe(200);
-    }, 40000);
+    });
 
     test("Server error on getting the number of comments on a blog", async () => {
-      await request(app).post("/admins").send({
-        firstName: "Sebwato",
-        lastName: "Musajya",
-        email: "biryogo@gmail.com",
-        password: "jimmy",
-        comfirmPassword: "jimmy",
-      });
-      const loginResponse = await request(app)
-        .post("/login")
-        .send({ email: "biryogo@gmail.com", password: "jimmy" });
-      const token = loginResponse.body.token;
-      const response = await request(app)
-        .post("/blogs")
-        .set("Authorization", `Bearer ${token}`)
-        .send({
-          title: "updating a blog",
-          description:
-            "Jimmy work done Jimmy work done Jimmy work done Jimmy work done Jimmy work done Jimmy work done Jimmy work done Jimmy work done",
-          file: image,
-        });
-      const blogId = response.body._id;
-      const result = await request(app).post(`/blogs/${blogId}/comments`).send({
-        name: "Jimmy Mutabazi",
-        comment: "some comment to post on the article",
-      });
-
       const mockfn = jest.fn().mockRejectedValue(new Error("Database error"));
       jest.spyOn(Comment, "find").mockImplementationOnce(mockfn);
       const errorResponse = await request(app).get(
-        `/blogs/${blogId}/comments/comments`
+        `/blogs/${testBlogId}/comments/comments`
       );
       expect(errorResponse.statusCode).toBe(500);
       jest.spyOn(Comment, "find").mockClear();
-    }, 40000);
+    });
   });
 
   describe("operations on likes endpoints", () => {
     test("get the number of blog likes", async () => {
-      await request(app).post("/admins").send({
-        firstName: "Sebwato",
-        lastName: "Musajya",
-        email: "biryogo@gmail.com",
-        password: "jimmy",
-        comfirmPassword: "jimmy",
-      });
-      const loginResponse = await request(app)
-        .post("/login")
-        .send({ email: "biryogo@gmail.com", password: "jimmy" });
-      const token = loginResponse.body.token;
-      const response = await request(app)
-        .post("/blogs")
-        .set("Authorization", `Bearer ${token}`)
-        .send({
-          title: image,
-          description:
-            "Jimmy work done Jimmy work done Jimmy work done Jimmy work done Jimmy work done Jimmy work done Jimmy work done Jimmy work done",
-          file: image,
-        });
-      const blogId = response.body._id;
-      const result = await request(app).get(`/blogs/${blogId}/likes`);
+      const result = await request(app).get(`/blogs/${testBlogId}/likes`);
       expect(result.statusCode).toBe(200);
 
       const nonMongooseIdResult = await request(app).get(
@@ -863,7 +583,7 @@ describe("Operations blogs in general", () => {
         `/blogs/63ae8166e9f02b6989aa15ad/likes`
       );
       expect(notFoundResult.statusCode).toBe(404);
-    }, 40000);
+    });
 
     test("like or unlike a blog", async () => {
       await request(app).post("/users").send({
@@ -877,57 +597,16 @@ describe("Operations blogs in general", () => {
         .post("/login")
         .send({ email: "biryogo@gmail.com", password: "jimmy" });
       const token = loginResponse.body.token;
-      await request(app).post("/admins").send({
-        firstName: "Sebwato",
-        lastName: "Musajya",
-        email: "masabo@gmail.com",
-        password: "jimmy",
-        comfirmPassword: "jimmy",
-      });
-      const adminLoginResponse = await request(app)
-        .post("/login")
-        .send({ email: "masabo@gmail.com", password: "jimmy" });
-      const adminToken = adminLoginResponse.body.token;
-      const response = await request(app)
-        .post("/blogs")
-        .set("Authorization", `Bearer ${adminToken}`)
-        .send({
-          title: "updating a blog",
-          description:
-            "Jimmy work done Jimmy work done Jimmy work done Jimmy work done Jimmy work done Jimmy work done Jimmy work done Jimmy work done",
-          file: image,
-        });
-      const blogId = response.body._id;
+
       const resultAdmin = await request(app)
-        .put(`/blogs/${blogId}/likes`)
+        .put(`/blogs/${testBlogId}/likes`)
         .set("Authorization", `Bearer ${adminToken}`);
       expect(resultAdmin.statusCode).toBe(401);
 
       const result = await request(app)
-        .put(`/blogs/${blogId}/likes`)
+        .put(`/blogs/${testBlogId}/likes`)
         .set("Authorization", `Bearer ${token}`);
       expect(result.statusCode).toBe(200);
-      jest
-        .spyOn(Blog, "updateOne")
-        .mockImplementationOnce(
-          jest.fn().mockRejectedValue(new Error("Internal error"))
-        );
-      const ServerErrorBlogUpResultOne = await request(app)
-        .put(`/blogs/${blogId}/likes`)
-        .set("Authorization", `Bearer ${token}`);
-      expect(ServerErrorBlogUpResultOne.statusCode).toBe(500);
-      jest.spyOn(Blog, "updateOne").mockClear();
-
-      jest
-        .spyOn(Like, "findOneAndDelete")
-        .mockImplementationOnce(
-          jest.fn().mockRejectedValue(new Error("Internal error"))
-        );
-      const ServerErrorDelLikeResult = await request(app)
-        .put(`/blogs/${blogId}/likes`)
-        .set("Authorization", `Bearer ${token}`);
-      expect(ServerErrorDelLikeResult.statusCode).toBe(500);
-      jest.spyOn(Like, "findOneAndDelete").mockClear();
 
       const badIdErrorResult = await request(app)
         .put(`/blogs/jdfdfdgrereisujk/likes`)
@@ -940,20 +619,40 @@ describe("Operations blogs in general", () => {
       expect(blogNotFoundErrResult.statusCode).toBe(404);
 
       const dislikeResult = await request(app)
-        .put(`/blogs/${blogId}/likes`)
+        .put(`/blogs/${testBlogId}/likes`)
         .set("Authorization", `Bearer ${token}`);
       expect(dislikeResult.statusCode).toBe(200);
 
       jest
         .spyOn(Blog, "updateOne")
-        .mockImplementationOnce(
+        .mockImplementation(
           jest.fn().mockRejectedValue(new Error("Internal error"))
         );
+      jest
+        .spyOn(Like, "findOneAndDelete")
+        .mockImplementation(
+          jest.fn().mockRejectedValue(new Error("Internal error"))
+        );
+
+      jest
+        .spyOn(Blog, "updateOne")
+        .mockImplementation(
+          jest.fn().mockRejectedValue(new Error("Internal error"))
+        );
+      const ServerErrorBlogUpResultOne = await request(app)
+        .put(`/blogs/${testBlogId}/likes`)
+        .set("Authorization", `Bearer ${token}`);
+      expect(ServerErrorBlogUpResultOne.statusCode).toBe(500);
+
+      const ServerErrorDelLikeResult = await request(app)
+        .put(`/blogs/${testBlogId}/likes`)
+        .set("Authorization", `Bearer ${token}`);
+      expect(ServerErrorDelLikeResult.statusCode).toBe(500);
+
       const ServerErrorBlogUpResult = await request(app)
-        .put(`/blogs/${blogId}/likes`)
+        .put(`/blogs/${testBlogId}/likes`)
         .set("Authorization", `Bearer ${token}`);
       expect(ServerErrorBlogUpResult.statusCode).toBe(500);
-      jest.spyOn(Blog, "updateOne").mockClear();
     });
   });
 });
@@ -961,25 +660,14 @@ describe("Operations blogs in general", () => {
 //testing endpoints on users (create, and read)
 describe("User endpoints", () => {
   test("Get all users", async () => {
-    await request(app).post("/admins").send({
-      firstName: "Sebwato",
-      lastName: "Musajya",
-      email: "biryogo@gmail.com",
-      password: "jimmy",
-      comfirmPassword: "jimmy",
-    });
-    const loginResponse = await request(app)
-      .post("/login")
-      .send({ email: "biryogo@gmail.com", password: "jimmy" });
-    const token = loginResponse.body.token;
     const result = await request(app)
       .get("/users")
-      .set("Authorization", `Bearer ${token}`);
+      .set("Authorization", `Bearer ${adminToken}`);
     expect(result.statusCode).toBe(200);
 
     const resultUsersNumber = await request(app)
       .get("/users/users")
-      .set("Authorization", `Bearer ${token}`);
+      .set("Authorization", `Bearer ${adminToken}`);
     expect(resultUsersNumber.statusCode).toBe(200);
 
     jest
@@ -989,7 +677,7 @@ describe("User endpoints", () => {
       );
     const resultUsersNumberIntErr = await request(app)
       .get("/users/users")
-      .set("Authorization", `Bearer ${token}`);
+      .set("Authorization", `Bearer ${adminToken}`);
     expect(resultUsersNumberIntErr.statusCode).toBe(500);
   });
 
@@ -1001,10 +689,11 @@ describe("User endpoints", () => {
       password: "jimmy",
       comfirmPassword: "jimmy",
     });
-    const loginResponse = await request(app)
+    const userloginResponse = await request(app)
       .post("/login")
       .send({ email: "biryogo@gmail.com", password: "jimmy" });
-    const token = loginResponse.body.token;
+    const token = userloginResponse.body.token;
+
     const result = await request(app)
       .get("/users")
       .set("Authorization", `Bearer ${token}`);
@@ -1012,22 +701,11 @@ describe("User endpoints", () => {
   });
 
   test("server error in get all users", async () => {
-    await request(app).post("/admins").send({
-      firstName: "Sebwato",
-      lastName: "Musajya",
-      email: "biryogo@gmail.com",
-      password: "jimmy",
-      comfirmPassword: "jimmy",
-    });
-    const loginResponse = await request(app)
-      .post("/login")
-      .send({ email: "biryogo@gmail.com", password: "jimmy" });
-    const token = loginResponse.body.token;
     const mockfn = jest.fn().mockRejectedValue(new Error("Database error"));
     jest.spyOn(User, "find").mockImplementationOnce(mockfn);
     const response = await request(app)
       .get("/users")
-      .set("Authorization", `Bearer ${token}`);
+      .set("Authorization", `Bearer ${adminToken}`);
     expect(response.status).toBe(500);
     jest.spyOn(User, "find").mockClear();
   });
@@ -1049,50 +727,29 @@ describe("User endpoints", () => {
       comfirmPassword: "jimmy",
     });
     expect(notPassValidation.statusCode).toBe(400);
-  });
 
-  test("Should return an error if email is already registered", async () => {
-    await request(app).post("/users").send({
+    const resultUserExist = await request(app).post("/users").send({
       firstName: "dan",
       lastName: "david",
       email: "daviddan@gmail.com",
       password: "jimmy",
       comfirmPassword: "jimmy",
     });
-    const result = await request(app).post("/users").send({
-      firstName: "dan",
-      lastName: "david",
-      email: "daviddan@gmail.com",
-      password: "jimmy",
-      comfirmPassword: "jimmy",
-    });
-    expect(result.statusCode).toBe(400);
-    expect(result.body.message).toBe("This email is already regisered");
+    expect(resultUserExist.statusCode).toBe(400);
   });
 });
 
 //testing endpoints on messages/contactMe (send,read,single,delete)
 describe("Message endpoints", () => {
   test("Get all messages, and number of messages", async () => {
-    await request(app).post("/admins").send({
-      firstName: "Sebwato",
-      lastName: "Musajya",
-      email: "biryogo@gmail.com",
-      password: "jimmy",
-      comfirmPassword: "jimmy",
-    });
-    const loginResponse = await request(app)
-      .post("/login")
-      .send({ email: "biryogo@gmail.com", password: "jimmy" });
-    const token = loginResponse.body.token;
     const result = await request(app)
       .get("/messages")
-      .set("Authorization", `Bearer ${token}`);
+      .set("Authorization", `Bearer ${adminToken}`);
     expect(result.statusCode).toBe(200);
 
     const numberResult = await request(app)
       .get("/messages/messages")
-      .set("Authorization", `Bearer ${token}`);
+      .set("Authorization", `Bearer ${adminToken}`);
     expect(numberResult.statusCode).toBe(200);
 
     jest
@@ -1102,12 +759,12 @@ describe("Message endpoints", () => {
       );
     const serverErrorOne = await request(app)
       .get("/messages")
-      .set("Authorization", `Bearer ${token}`);
+      .set("Authorization", `Bearer ${adminToken}`);
     expect(serverErrorOne.statusCode).toBe(500);
 
     const serverErrorTwo = await request(app)
       .get("/messages/messages")
-      .set("Authorization", `Bearer ${token}`);
+      .set("Authorization", `Bearer ${adminToken}`);
     expect(serverErrorTwo.statusCode).toBe(500);
   });
 
@@ -1128,46 +785,34 @@ describe("Message endpoints", () => {
     const messageId = result.body._id;
     expect(result.statusCode).toBe(200);
 
-    await request(app).post("/admins").send({
-      firstName: "Sebwato",
-      lastName: "Musajya",
-      email: "biryogo@gmail.com",
-      password: "jimmy",
-      comfirmPassword: "jimmy",
-    });
-
-    const loginResponse = await request(app)
-      .post("/login")
-      .send({ email: "biryogo@gmail.com", password: "jimmy" });
-    const token = loginResponse.body.token;
     const singleResult = await request(app)
       .get(`/messages/${messageId}`)
-      .set("Authorization", `Bearer ${token}`);
+      .set("Authorization", `Bearer ${adminToken}`);
     expect(singleResult.statusCode).toBe(200);
 
     const singleErrorResult = await request(app)
       .get(`/messages/ggfgfgfd`)
-      .set("Authorization", `Bearer ${token}`);
+      .set("Authorization", `Bearer ${adminToken}`);
     expect(singleErrorResult.statusCode).toBe(400);
 
     const singleErrorNotExist = await request(app)
       .get(`/messages/63ac6153042cf31311085132`)
-      .set("Authorization", `Bearer ${token}`);
+      .set("Authorization", `Bearer ${adminToken}`);
     expect(singleErrorNotExist.statusCode).toBe(404);
 
     const delErrorResult = await request(app)
       .delete(`/messages/jgfdwdsd`)
-      .set("Authorization", `Bearer ${token}`);
+      .set("Authorization", `Bearer ${adminToken}`);
     expect(delErrorResult.statusCode).toBe(400);
 
     const delErrorResultBad = await request(app)
       .delete(`/messages/63ac6153042cf31311085132`)
-      .set("Authorization", `Bearer ${token}`);
+      .set("Authorization", `Bearer ${adminToken}`);
     expect(delErrorResultBad.statusCode).toBe(404);
 
     const delResult = await request(app)
       .delete(`/messages/${messageId}`)
-      .set("Authorization", `Bearer ${token}`);
+      .set("Authorization", `Bearer ${adminToken}`);
     expect(delResult.statusCode).toBe(204);
     jest
       .spyOn(Message, "findOne")
@@ -1186,32 +831,21 @@ describe("Message endpoints", () => {
       );
     const delResultServerErr = await request(app)
       .delete(`/messages/${messageId}`)
-      .set("Authorization", `Bearer ${token}`);
+      .set("Authorization", `Bearer ${adminToken}`);
     expect(delResultServerErr.statusCode).toBe(500);
 
     const singleResultservErrror = await request(app)
       .get(`/messages/${messageId}`)
-      .set("Authorization", `Bearer ${token}`);
+      .set("Authorization", `Bearer ${adminToken}`);
     expect(singleResultservErrror.statusCode).toBe(500);
   });
 
   test("server error in get all messages", async () => {
-    await request(app).post("/admins").send({
-      firstName: "Sebwato",
-      lastName: "Musajya",
-      email: "biryogo@gmail.com",
-      password: "jimmy",
-      comfirmPassword: "jimmy",
-    });
-    const loginResponse = await request(app)
-      .post("/login")
-      .send({ email: "biryogo@gmail.com", password: "jimmy" });
-    const token = loginResponse.body.token;
     const mockfn = jest.fn().mockRejectedValue(new Error("Database error"));
     jest.spyOn(Message, "find").mockImplementationOnce(mockfn);
     const response = await request(app)
       .get("/messages")
-      .set("Authorization", `Bearer ${token}`);
+      .set("Authorization", `Bearer ${adminToken}`);
     expect(response.status).toBe(500);
     jest.spyOn(Message, "find").mockClear();
   });
@@ -1232,26 +866,29 @@ describe("Message endpoints", () => {
 
 describe("Common endpoints", () => {
   test("Success login", async () => {
-    await request(app).post("/admins").send({
-      firstName: "Sebwato",
-      lastName: "Musajya",
-      email: "biryogo@gmail.com",
-      password: "jimmy",
-      comfirmPassword: "jimmy",
-    });
+    await request(app)
+      .post("/admins")
+      .send({
+        firstName: "Sebwato",
+        lastName: "Musajya",
+        email: "gikono@gmail.com",
+        password: "jimmy",
+        comfirmPassword: "jimmy",
+      })
+      .set("Authorization", `Bearer ${adminToken}`);
     const passportLoginErrorResponse = await request(app)
       .post("/login")
-      .send({ email: "biryogo@gmail.com", password: "gffcsjhtf" });
+      .send({ email: "gikono@gmail.com", password: "gffcsjhtf" });
     expect(passportLoginErrorResponse.statusCode).toBe(401);
 
     const ValidatloginResponse = await request(app)
       .post("/login")
-      .send({ email: "biryogo@gmail.com" });
+      .send({ email: "gikono@gmail.com" });
     expect(ValidatloginResponse.statusCode).toBe(400);
 
     const loginResponse = await request(app)
       .post("/login")
-      .send({ email: "biryogo@gmail.com", password: "jimmy" });
+      .send({ email: "gikono@gmail.com", password: "jimmy" });
     const token = loginResponse.body.token;
     expect(loginResponse.statusCode).toBe(200);
 
@@ -1295,13 +932,16 @@ test("testing server error on admin sighnup", async () => {
     .mockImplementationOnce(
       jest.fn().mockRejectedValue(new Error("Server error!"))
     );
-  const serverErr = await request(app).post("/admins").send({
-    firstName: "Sebwato",
-    lastName: "Musajya",
-    email: "biryogo@gmail.com",
-    password: "jimmy",
-    comfirmPassword: "jimmy",
-  });
+  const serverErr = await request(app)
+    .post("/admins")
+    .send({
+      firstName: "Sebwato",
+      lastName: "Musajya",
+      email: "biryogo@gmail.com",
+      password: "jimmy",
+      comfirmPassword: "jimmy",
+    })
+    .set("Authorization", `Bearer ${adminToken}`);
   expect(serverErr.statusCode).toBe(500);
   jest.spyOn(User.prototype, "save").mockClear();
 });

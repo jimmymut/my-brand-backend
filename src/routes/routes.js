@@ -1,21 +1,21 @@
 import express from "express";
-import blogRouter from "./api/blogRouts";
-import msgRouter from "./api/messageRoutes";
-import adminRouter from "./api/adminRoutes";
-import userRouter from "./api/userRoutes";
-import loginout from "./api/logInOut";
-import { notFound } from "../controllers/userController";
+import blogRouter from "./api/blogRouts.js";
+import msgRouter from "./api/messageRoutes.js";
+import adminRouter from "./api/adminRoutes.js";
+import userRouter from "./api/userRoutes.js";
+import loginout from "./api/logInOut.js";
+import { notFound } from "../controllers/userController.js";
 import swaggerUi from "swagger-ui-express";
-import specs from "../utils/swaggerConfig";
-import { authorized } from "../middlewares/authenticate";
-import { isAdmin } from "../middlewares/isAdmin";
+import specs from "../utils/swaggerConfig.js";
+import { authorized } from "../middlewares/authenticate.js";
+import { isAdmin } from "../middlewares/isAdmin.js";
 
 const router = express.Router();
 
 router.use("/", loginout);
 router.use("/blogs", blogRouter);
 router.use("/messages", msgRouter);
-router.use("/admins", adminRouter);
+router.use("/admins", authorized, isAdmin, adminRouter);
 router.use("/users", userRouter);
 router.use("/api/docs", swaggerUi.serve, swaggerUi.setup(specs));
 

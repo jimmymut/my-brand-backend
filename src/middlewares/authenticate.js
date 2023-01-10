@@ -1,5 +1,5 @@
 import passport from "passport";
-import "../authentications/auth";
+import "../authentications/auth.js";
 
 const authorized = passport.authenticate("jwt", { session: false });
 

@@ -1,4 +1,4 @@
-import validateMessageSchema from "../validations/messageValidate";
+import validateMessageSchema from "../validations/messageValidate.js";
 
 const validatedMessage = async (req, res, next) => {
   const { error, value } = validateMessageSchema.validate(req.body, {

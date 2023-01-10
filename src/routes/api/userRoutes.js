@@ -3,10 +3,10 @@ import {
   userSignUp,
   getAllUsers,
   getNumberNonAdminUsers,
-} from "../../controllers/userController";
-import { authorized } from "../../middlewares/authenticate";
-import { isAdmin } from "../../middlewares/isAdmin";
-import { validatedUserSignUp } from "../../middlewares/userSchemaValidate";
+} from "../../controllers/userController.js";
+import { authorized } from "../../middlewares/authenticate.js";
+import { isAdmin } from "../../middlewares/isAdmin.js";
+import { validatedUserSignUp } from "../../middlewares/userSchemaValidate.js";
 
 const userRouter = express.Router();
 

@@ -1,24 +1,43 @@
 import passport from "passport";
-import Admin from "../models/adminModel";
+import User from "../models/user";
 import { Strategy as JwtStrategy } from "passport-jwt";
 import { ExtractJwt as ExtractJwt } from "passport-jwt";
+import { Strategy as LocalStrategy } from "passport-local";
+import bcrypt from "bcrypt";
+import "dotenv/config";
 
-const opts = {};
-opts.jwtFromRequest = ExtractJwt.fromAuthHeaderAsBearerToken();
-opts.secretOrKey = process.env.SECRET_KEY;
-// opts.issuer = 'accounts.examplesoft.com';
-// opts.audience = 'yoursite.net';
 passport.use(
-  new JwtStrategy(opts, function (jwt_payload, done) {
-    Admin.findOne({ id: jwt_payload.id }, function (err, user) {
-      if (err) {
-        return done(err, false);
+  new LocalStrategy(
+    {
+      usernameField: "email",
+      passwordField: "password",
+    },
+    async (email, password, done) => {
+      const user = await User.findOne({ email });
+      if (!user) {
+        return done(null, false, { message: "User not found" });
       }
-      if (user) {
-        return done(null, user);
-      } else {
-        return done(null, false);
+      const isMatch = await bcrypt.compare(password, user.password);
+      if (!isMatch) {
+        return done(null, false, { message: "Incorrect password or email" });
       }
-    });
-  })
+      return done(null, user);
+    }
+  )
+);
+passport.use(
+  "jwt",
+  new JwtStrategy(
+    {
+      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      secretOrKey: process.env.SECRET_KEY,
+    },
+    async (jwtPayload, done) => {
+      const user = await User.findById(jwtPayload.id);
+      if (!user) {
+        return done(null, false, { message: "User not found" });
+      }
+      return done(null, user);
+    }
+  )
 );

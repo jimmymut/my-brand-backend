@@ -1,50 +1,55 @@
 import mongoose from "mongoose";
 
-const Schema = mongoose.Schema;
-
 /**
  * @swagger
  * components:
  *   schemas:
- *     MessageSend:
+ *     UserSignUp:
  *       type: object
  *       properties:
- *         contName:
+ *         firstName:
  *           type: string
- *           default: Jimmy Mutabazi
- *         contEmail:
+ *           default: Jimmy
+ *         lastName:
+ *           type: string
+ *           default: Mutabazi
+ *         email:
  *           type: string
  *           default: mutabazijimmy9@gmail.com
- *         phone:
+ *         password:
  *           type: string
- *           default: "+250789706729"
- *         message:
+ *           default: password
+ *         comfirmPassword:
  *           type: string
- *           default: Good work, reach out to me and have a talk.
+ *           default: password
  *       required:
- *         - contName
- *         - contEmail
- *         - phone
- *         - message
- *     MessageResponse:
+ *         - firstName
+ *         - lastName
+ *         - email
+ *         - password
+ *         - comfirmPassword
+ *     UserResponse:
  *       type: object
  *       properties:
  *         _id:
  *           type: string
  *           format: objectId
  *           default: 63ac5fe55065aaae433a9758
- *         contName:
+ *         firstName:
  *           type: string
- *           default: Jimmy Mutabazi
- *         contEmail:
+ *           default: Jimmy
+ *         lastName:
+ *           type: string
+ *           default: Mutabazi
+ *         email:
  *           type: string
  *           default: mutabazijimmy9@gmail.com
- *         phone:
+ *         password:
  *           type: string
- *           default: "+250789706729"
- *         message:
+ *           default: $2b$10$WyFYt1nWRDaUVwsQcLO61yTZECn4bJpEpbiqgsMT1lzTzZAfpq
+ *         title:
  *           type: string
- *           default: Good work, reach out to me and have a talk.
+ *           default: user
  *         createdAt:
  *           type: string
  *           default: 2023-01-07T12:47:20.359Z
@@ -55,28 +60,33 @@ const Schema = mongoose.Schema;
  *           type: number
  *           default: 0
  */
-const messageSchema = new Schema(
+
+const userSchema = mongoose.Schema(
   {
-    contName: {
+    firstName: {
       type: String,
       required: true,
     },
-    contEmail: {
+    lastName: {
       type: String,
       required: true,
     },
-    phone: {
+    email: {
       type: String,
       required: true,
     },
-    message: {
+    password: {
       type: String,
       required: true,
+    },
+    title: {
+      type: String,
+      default: "user",
     },
   },
   { timestamps: true }
 );
 
-const Message = mongoose.model("Message", messageSchema);
+const User = mongoose.model("User", userSchema);
 
-export default Message;
+export default User;

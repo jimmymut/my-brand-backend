@@ -1,33 +1,8 @@
-import express from "express";
-import mongoose from "mongoose";
-import morgan from "morgan";
-import "dotenv/config";
-import router from "./routes/routes";
-import cors from "cors";
-import passport from "passport";
+import app from "./app";
 
-const PORT = process.env.PORT || 3000;
-mongoose.set("strictQuery", true);
-
-mongoose
-  .connect(process.env.DATABASE_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
-  .then(() => {
-    console.log("database conneted successfully!");
-    const app = express();
-
-    app.use(express.json());
-    app.use(morgan("dev"));
-    app.use(express.urlencoded({ extended: true }));
-    app.use(cors());
-    app.use(passport.initialize());
-
-    app.use("/", router);
-
-    app.listen(PORT, () => {
-      console.log("Server is running at", PORT);
-    });
-  })
-  .catch((error) => console.error(error));
+try {
+  const PORT = process.env.PORT || 4000;
+  app.listen(PORT, () => console.log("Server is running at", PORT));
+} catch (error) {
+  console.log(error);
+}

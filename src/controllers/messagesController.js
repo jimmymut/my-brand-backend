@@ -1,12 +1,23 @@
 import Message from "../models/messagesModel";
+import mongoose from "mongoose";
 
 const getAllMessages = async (req, res) => {
   await Message.find()
     .then((messages) => {
-      res.json(messages);
+      res.status(200).json(messages);
     })
     .catch(() => {
-      res.json({ message: "error occured!" });
+      res.status(500).json({ message: "error occured!" });
+    });
+};
+
+const getNumberMessages = async (req, res) => {
+  await Message.find()
+    .then((numComments) => {
+      res.json({ comments: numComments.length });
+    })
+    .catch(() => {
+      res.status(500).json({ message: "error occured!" });
     });
 };
 
@@ -21,7 +32,7 @@ const contactMe = async (req, res) => {
   await messages
     .save()
     .then((result) => {
-      res.json(result);
+      res.status(200).json(result);
     })
     .catch(() => {
       res.status(500).json({ Error: "send message failed" });
@@ -29,22 +40,41 @@ const contactMe = async (req, res) => {
 };
 
 const singleMessage = async (req, res) => {
-  await Message.findOne({ _id: req.params.id })
-    .then((message) => {
-      res.json(message);
-    })
-    .catch(() => {
-      res.status(404).json({ Error: "No message found!" });
-    });
+  try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).send("Invalid id");
+    }
+    const exist = await Message.findById(req.params.id);
+    if (!exist) {
+      return res.status(404).json({ error: "Message not found!" });
+    }
+    const message = await Message.findOne({ _id: req.params.id });
+    res.status(200).json(message);
+  } catch (error) {
+    res.status(500).json({ Error: error });
+  }
 };
 
 const deleteMessage = async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).send("Invalid id");
+    }
+    const exist = await Message.findById(req.params.id);
+    if (!exist) {
+      return res.status(404).json({ error: "Message not found!" });
+    }
     await Message.findOneAndDelete({ _id: req.params.id });
-    res.status(204).json();
+    res.status(204).json("Message deleted");
   } catch {
-    res.status(404).json({ error: "message doesn't exist!" });
+    res.status(500).json("Error occured!");
   }
 };
 
-export { getAllMessages, contactMe, singleMessage, deleteMessage };
+export {
+  getAllMessages,
+  contactMe,
+  singleMessage,
+  deleteMessage,
+  getNumberMessages,
+};

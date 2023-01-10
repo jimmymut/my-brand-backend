@@ -5,9 +5,7 @@ const validatedMessage = async (req, res, next) => {
     abortEarly: false,
   });
   if (error) {
-    return res.status(400).json({
-      error,
-    });
+    return res.status(400).send(error.message);
   }
   req.validatedData = value;
   next();

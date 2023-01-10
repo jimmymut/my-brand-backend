@@ -1,10 +1,8 @@
-import app from "../src/app";
+import app from "../src/index";
 import request from "supertest";
 import User from "../src/models/user";
 import { Blog, Like, Comment } from "../src/models/blogModel";
 import Message from "../src/models/messagesModel";
-import { v2 as cloudinary } from "cloudinary";
-import passport from "passport";
 
 import mongoose from "mongoose";
 

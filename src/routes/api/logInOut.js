@@ -1,8 +1,8 @@
 import express from "express";
-import { validatedUserLogin } from "../../middlewares/userSchemaValidate";
-import { authorized } from "../../middlewares/authenticate";
-import { userLogin, userLogOut } from "../../controllers/userController";
-import { authUserLogin } from "../../middlewares/authenticate";
+import { validatedUserLogin } from "../../middlewares/userSchemaValidate.js";
+import { authorized } from "../../middlewares/authenticate.js";
+import { userLogin, userLogOut } from "../../controllers/userController.js";
+import { authUserLogin } from "../../middlewares/authenticate.js";
 
 const loginout = express.Router();
 

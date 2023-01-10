@@ -1,6 +1,6 @@
-import User from "../models/user";
+import User from "../models/user.js";
 import bcrypt from "bcrypt";
-import encode from "../utils/encodeToken";
+import encode from "../utils/encodeToken.js";
 
 const userSignUp = async (req, res) => {
   try {

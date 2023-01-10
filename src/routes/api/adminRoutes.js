@@ -6,10 +6,8 @@ import {
   getAllAppUsers,
   getNumberAdmins,
   getNumberAllAppUsers,
-} from "../../controllers/adminController";
-import { authorized } from "../../middlewares/authenticate";
-import { isAdmin } from "../../middlewares/isAdmin";
-import { validatedUserSignUp } from "../../middlewares/userSchemaValidate";
+} from "../../controllers/adminController.js";
+import { validatedUserSignUp } from "../../middlewares/userSchemaValidate.js";
 
 const adminRouter = express.Router();
 
@@ -67,7 +65,7 @@ adminRouter.post("/", validatedUserSignUp, adminSignUp);
  *       500:
  *         description: Internal error
  */
-adminRouter.get("/", authorized, isAdmin, getAllAdmins);
+adminRouter.get("/", getAllAdmins);
 
 /**
  * @swagger
@@ -94,7 +92,7 @@ adminRouter.get("/", authorized, isAdmin, getAllAdmins);
  *       500:
  *         description: Internal error
  */
-adminRouter.get("/admins", authorized, isAdmin, getNumberAdmins);
+adminRouter.get("/admins", getNumberAdmins);
 
 /**
  * @swagger
@@ -119,7 +117,7 @@ adminRouter.get("/admins", authorized, isAdmin, getNumberAdmins);
  *       500:
  *         description: Internal error
  */
-adminRouter.get("/users", authorized, isAdmin, getAllAppUsers);
+adminRouter.get("/users", getAllAppUsers);
 
 /**
  * @swagger
@@ -146,7 +144,7 @@ adminRouter.get("/users", authorized, isAdmin, getAllAppUsers);
  *       500:
  *         description: Internal error
  */
-adminRouter.get("/users/users", authorized, isAdmin, getNumberAllAppUsers);
+adminRouter.get("/users/users", getNumberAllAppUsers);
 
 /**
  * @swagger
@@ -179,6 +177,6 @@ adminRouter.get("/users/users", authorized, isAdmin, getNumberAllAppUsers);
  *       500:
  *         description: Internal error
  */
-adminRouter.delete("/:id", authorized, isAdmin, deleteUserAccount);
+adminRouter.delete("/:id", deleteUserAccount);
 
 export default adminRouter;

@@ -111,14 +111,10 @@ const blogSchema = new Schema(
  *     addComment:
  *       type: object
  *       properties:
- *         name:
- *           type: string
- *           default: Jimmy Mutabazi
  *         comment:
  *           type: string
  *           default: You are slowly getting there
  *       required:
- *         - name
  *         - comment
  *
  *     CommentResponse:
@@ -138,6 +134,10 @@ const blogSchema = new Schema(
  *           type: string
  *           format: objectId
  *           default: 63ac5fe55065aaae433a9758
+ *         userId:
+ *           type: string
+ *           format: objectId
+ *           default: 63ac5fe55065aaae433a9758
  *         commentedAt:
  *           type: string
  *           default: 2023-01-07T12:47:20.359Z
@@ -146,10 +146,6 @@ const blogSchema = new Schema(
  *           default: 0
  */
 const commentSchema = new Schema({
-  name: {
-    type: String,
-    required: true,
-  },
   comment: {
     type: String,
     required: true,
@@ -158,6 +154,11 @@ const commentSchema = new Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "Blog",
   },
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+  },
+
   commentedAt: {
     type: Date,
     default: Date.now,

@@ -5,10 +5,10 @@ import {
   singleMessage,
   deleteMessage,
   getNumberMessages,
-} from "../../controllers/messagesController";
-import validatedMessage from "../../middlewares/messageSchemaValidator";
-import { authorized } from "../../middlewares/authenticate";
-import { isAdmin } from "../../middlewares/isAdmin";
+} from "../../controllers/messagesController.js";
+import validatedMessage from "../../middlewares/messageSchemaValidator.js";
+import { authorized } from "../../middlewares/authenticate.js";
+import { isAdmin } from "../../middlewares/isAdmin.js";
 
 const msgRouter = express.Router();
 

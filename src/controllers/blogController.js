@@ -1,4 +1,4 @@
-import { Blog, Comment, Like } from "../models/blogModel";
+import { Blog, Comment, Like } from "../models/blogModel.js";
 import { v2 as cloudinary } from "cloudinary";
 import mongoose from "mongoose";
 import "dotenv/config";
@@ -180,12 +180,11 @@ const addComment = async (req, res) => {
   if (!exist) {
     return res.status(404).json({ error: "Blog doesn't exist!" });
   }
-
-  const { name, comment } = req.body;
+  const newUserId = req.user._id;
   const newcomment = new Comment({
-    name,
-    comment,
+    comment: req.body.comment,
     blogId: id,
+    userId: newUserId,
   });
 
   newcomment

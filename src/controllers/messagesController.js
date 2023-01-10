@@ -1,4 +1,4 @@
-import Message from "../models/messagesModel";
+import Message from "../models/messagesModel.js";
 import mongoose from "mongoose";
 
 const getAllMessages = async (req, res) => {

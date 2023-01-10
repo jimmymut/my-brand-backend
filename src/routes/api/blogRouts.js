@@ -13,15 +13,15 @@ import {
   numberOfBlogComments,
   getNumberAllBlogs,
   getSingleComment,
-} from "../../controllers/blogController";
+} from "../../controllers/blogController.js";
 import {
   validatedAddBlog,
   validatedUpdateBlog,
   validatedAddComment,
-} from "../../middlewares/blogSchemaValidation";
-import upload from "../../utils/multer";
-import { authorized } from "../../middlewares/authenticate";
-import { isAdmin, isNotAdmin } from "../../middlewares/isAdmin";
+} from "../../middlewares/blogSchemaValidation.js";
+import upload from "../../utils/multer.js";
+import { authorized } from "../../middlewares/authenticate.js";
+import { isAdmin, isNotAdmin } from "../../middlewares/isAdmin.js";
 
 const blogRouter = express.Router();
 
@@ -246,6 +246,8 @@ blogRouter.get("/:id/comments", allComments);
  *     tags:
  *       - Blogs
  *     summary: Add a comment on a blog
+ *     security:
+ *       - jwt: []
  *     parameters:
  *       - name: id
  *         in: path
@@ -271,7 +273,7 @@ blogRouter.get("/:id/comments", allComments);
  *       500:
  *         description: Internal error
  */
-blogRouter.post("/:id/comments", validatedAddComment, addComment);
+blogRouter.post("/:id/comments", authorized, validatedAddComment, addComment);
 
 /**
  * @swagger
@@ -330,6 +332,8 @@ blogRouter.get("/:id/comments/comments", numberOfBlogComments);
  *                 $ref: '#/components/schemas/CommentResponse'
  *       400:
  *         description: invalid blog or comment id
+ *       401:
+ *         description: Not logged in
  *       404:
  *         description: Blog or comment doesn't exist
  *       500:

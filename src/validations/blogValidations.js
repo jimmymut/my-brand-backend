@@ -13,10 +13,6 @@ const validateUpdateBlogSchema = Joi.object({
   file: Joi.string(),
 }).min(1);
 const validateBlogCommentSchema = Joi.object({
-  name: Joi.string()
-    .regex(/^[A-Z]+ [A-Z]+$/i)
-    .min(3)
-    .required(),
   comment: Joi.string().min(10).required(),
 });
 

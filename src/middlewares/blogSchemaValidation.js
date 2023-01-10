@@ -2,7 +2,7 @@ import {
   validateAddBlogSchema,
   validateUpdateBlogSchema,
   validateBlogCommentSchema,
-} from "../validations/blogValidations";
+} from "../validations/blogValidations.js";
 import mongoose from "mongoose";
 
 const validatedAddBlog = async (req, res, next) => {

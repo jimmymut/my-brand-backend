@@ -1,4 +1,4 @@
-import { SignUpSchema, loginSchema } from "../validations/userValidate";
+import { SignUpSchema, loginSchema } from "../validations/userValidate.js";
 
 const validatedUserSignUp = async (req, res, next) => {
   const { error, value } = SignUpSchema.validate(req.body, {

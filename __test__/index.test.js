@@ -15,6 +15,7 @@ beforeEach(async () => {
   jest.setTimeout(40000);
 });
 afterAll(async () => {
+  jest.clearAllTimers();
   await mongoose.disconnect();
   await mongoose.connection.close();
 });

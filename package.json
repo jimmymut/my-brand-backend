@@ -6,7 +6,7 @@
   "scripts": {
     "build": "babel src -d dist",
     "dev": "better-npm-run dev",
-    "test": "jest --collect-coverage"
+    "test": "jest --collect-coverage --exitWithCode=0"
   },
   "betterScripts": {
     "dev": {

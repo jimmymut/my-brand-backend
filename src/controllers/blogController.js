@@ -1,4 +1,4 @@
-import { Blog, Comment, Like } from "../models/blogModel";
+import { Blog, Comment, Like } from "../models/blogModel.js";
 import { v2 as cloudinary } from "cloudinary";
 import mongoose from "mongoose";
 import "dotenv/config";
@@ -21,12 +21,12 @@ const getAllBlogs = async (req, res) => {
 };
 
 const addBlog = async (req, res) => {
-  const { title, description } = req.body;
-  cloudinary.uploader
-    .upload(req.body.file, {
-      folder: "images",
-    })
-    .then(async (uploadedImage) => {
+  try {
+    const { title, description } = req.body;
+    if (req.body.file) {
+      const uploadedImage = await cloudinary.uploader.upload(req.body.file, {
+        folder: "images",
+      });
       const blogs = new Blog({
         title,
         description,
@@ -35,18 +35,26 @@ const addBlog = async (req, res) => {
           url: uploadedImage.secure_url,
         },
       });
-      await blogs
-        .save()
-        .then((result) => {
-          res.status(200).json(result);
-        })
-        .catch(() => {
-          res.status(500).json({ Error: "Failed to create a blog" });
-        });
-    })
-    .catch(() => {
-      res.status(500).json({ Error: "Something went wrong!" });
-    });
+      const result = await blogs.save();
+      res.status(200).json(result);
+    } else {
+      const uploadedImage = await cloudinary.uploader.upload(req.file.path, {
+        folder: "images",
+      });
+      const blogs = new Blog({
+        title,
+        description,
+        file: {
+          public_id: uploadedImage.public_id,
+          url: uploadedImage.secure_url,
+        },
+      });
+      const result = await blogs.save();
+      res.status(200).json(result);
+    }
+  } catch (error) {
+    res.status(500).json({ Error: "Something went wrong!" });
+  }
 };
 
 const getNumberAllBlogs = async (req, res) => {
@@ -116,25 +124,9 @@ const deleteBlog = async (req, res) => {
       return res.status(404).json({ error: "Blog doesn't exist!" });
     }
     await Blog.deleteOne({ _id: id });
-    const blogLikes = await Like.find({ blogId: id });
-    if (!blogLikes) {
-      const blogComments = await Comment.find({ blogId: id });
-      if (!blogComments) {
-        res.status(204).json({ Message: "blog deleted" });
-      } else {
-        await Comment.deleteMany({ blogId: id });
-        res.status(204).json({ Message: "blog deleted" });
-      }
-    } else {
-      await Like.deleteMany({ blogId: id });
-      const blogComments = await Comment.find({ blogId: id });
-      if (!blogComments) {
-        res.status(204).json({ Message: "blog deleted" });
-      } else {
-        await Comment.deleteMany({ blogId: id });
-        res.status(204).json({ Message: "blog deleted" });
-      }
-    }
+    await Like.deleteMany({ blogId: id });
+    await Comment.deleteMany({ blogId: id });
+    res.status(204).json({ Message: "blog deleted!" });
   } catch (error) {
     res.status(500).json({ error });
   }
@@ -180,12 +172,11 @@ const addComment = async (req, res) => {
   if (!exist) {
     return res.status(404).json({ error: "Blog doesn't exist!" });
   }
-
-  const { name, comment } = req.body;
+  const newUserId = req.user._id;
   const newcomment = new Comment({
-    name,
-    comment,
+    comment: req.body.comment,
     blogId: id,
+    userId: newUserId,
   });
 
   newcomment
@@ -220,6 +211,9 @@ const deleteComment = async (req, res) => {
     }
 
     const commentExist = await Comment.findById(commentId);
+    if (!commentExist) {
+      return res.status(404).json({ error: "Comment doesn't exist!" });
+    }
 
     await Comment.deleteOne({ _id: commentExist._id });
 

@@ -1,4 +1,4 @@
-import User from "../models/user";
+import User from "../models/user.js";
 import bcrypt from "bcrypt";
 import mongoose from "mongoose";
 
@@ -40,6 +40,10 @@ const getNumberAllAppUsers = async (req, res) => {
     .catch((err) => {
       res.status(500).json({ Message: "Error occured!" });
     });
+};
+
+const checkIsAdmin = async (req, res) => {
+  res.status(200).json("Is an admin");
 };
 
 const adminSignUp = async (req, res) => {
@@ -89,4 +93,5 @@ export {
   getAllAppUsers,
   getNumberAdmins,
   getNumberAllAppUsers,
+  checkIsAdmin,
 };

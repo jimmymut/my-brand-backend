@@ -33,10 +33,10 @@ const Schema = mongoose.Schema;
  *           type: string
  *           format: objectId
  *           default: 63ac5fe55065aaae433a9758
- *         contName:
+ *         name:
  *           type: string
  *           default: Jimmy Mutabazi
- *         contEmail:
+ *         email:
  *           type: string
  *           default: mutabazijimmy9@gmail.com
  *         phone:
@@ -57,11 +57,11 @@ const Schema = mongoose.Schema;
  */
 const messageSchema = new Schema(
   {
-    contName: {
+    name: {
       type: String,
       required: true,
     },
-    contEmail: {
+    email: {
       type: String,
       required: true,
     },

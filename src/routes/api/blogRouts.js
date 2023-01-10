@@ -13,15 +13,15 @@ import {
   numberOfBlogComments,
   getNumberAllBlogs,
   getSingleComment,
-} from "../../controllers/blogController";
+} from "../../controllers/blogController.js";
 import {
   validatedAddBlog,
   validatedUpdateBlog,
   validatedAddComment,
-} from "../../middlewares/blogSchemaValidation";
-import upload from "../../utils/multer";
-import { authorized } from "../../middlewares/authenticate";
-import { isAdmin, isNotAdmin } from "../../middlewares/isAdmin";
+} from "../../middlewares/blogSchemaValidation.js";
+import upload from "../../utils/multer.js";
+import { authorized } from "../../middlewares/authenticate.js";
+import { isAdmin, isNotAdmin } from "../../middlewares/isAdmin.js";
 
 const blogRouter = express.Router();
 
@@ -56,11 +56,13 @@ blogRouter.get("/", getAllBlogs);
  *     security:
  *       - jwt: []
  *     requestBody:
- *         required: true
  *         content:
+ *           multipart/form-data:
+ *             schema:
+ *               $ref: '#/components/schemas/CreateBlog'
  *           application/json:
  *             schema:
- *                 $ref: '#/components/schemas/CreateBlog'
+ *               $ref: '#/components/schemas/CreateBlogJson'
  *     responses:
  *       200:
  *         description: Success
@@ -71,7 +73,9 @@ blogRouter.get("/", getAllBlogs);
  *       400:
  *         description: invalid information provided
  *       401:
- *         description: Should be loggedin and be an admin to create a blog
+ *         description: Should be loggedin
+ *       403:
+ *         description: Should be an admin to create a blog
  *       500:
  *         description: Internal error
  */
@@ -142,6 +146,7 @@ blogRouter.get("/:id", getSingleBlog);
  *     tags:
  *       - Blogs
  *     summary: Update/Edit a blog
+ *     description: multipart/form-data Content-Type is currently not working to update an article, Please choose application/json.
  *     security:
  *       - jwt: []
  *     parameters:
@@ -150,11 +155,13 @@ blogRouter.get("/:id", getSingleBlog);
  *         description: A unique blog identifier
  *         required: true
  *     requestBody:
- *         required: true
  *         content:
+ *           multipart/form-data:
+ *             schema:
+ *               $ref: '#/components/schemas/UpdateBlog'
  *           application/json:
  *             schema:
- *                 $ref: '#/components/schemas/UpdateBlog'
+ *               $ref: '#/components/schemas/UpdateBlogJson'
  *     responses:
  *       200:
  *         description: Success
@@ -164,14 +171,23 @@ blogRouter.get("/:id", getSingleBlog);
  *               $ref: '#/components/schemas/BlogResponse'
  *       400:
  *         description: invalid information provided, you need to provide at least one of the options
+ *       401:
+ *         description: Should be loggedin
+ *       403:
+ *         description: Should be an admin to edit a blog
  *       404:
  *         description: Blog doesn't exist
- *       401:
- *         description: Should be loggedin and be an admin to edit a blog
  *       500:
  *         description: Internal error
  */
-blogRouter.patch("/:id", authorized, isAdmin, validatedUpdateBlog, updateBlog);
+blogRouter.patch(
+  "/:id",
+  authorized,
+  isAdmin,
+  upload.single("file"),
+  validatedUpdateBlog,
+  updateBlog
+);
 
 /**
  * @swagger
@@ -189,7 +205,7 @@ blogRouter.patch("/:id", authorized, isAdmin, validatedUpdateBlog, updateBlog);
  *         required: true
  *     responses:
  *       204:
- *         description: Success
+ *         description: Blog deleted with its likes and comments
  *         content:
  *           application/json:
  *             schema:
@@ -200,10 +216,12 @@ blogRouter.patch("/:id", authorized, isAdmin, validatedUpdateBlog, updateBlog);
  *                      default: Blog deleted
  *       400:
  *         description: invalid blog id
+ *       401:
+ *         description: Should be loggedin
+ *       403:
+ *         description: Should be an admin to delete a blog
  *       404:
  *         description: Blog doesn't exist
- *       401:
- *         description: Should be loggedin and be an admin to delete a blog
  *       500:
  *         description: Internal error
  */
@@ -246,6 +264,8 @@ blogRouter.get("/:id/comments", allComments);
  *     tags:
  *       - Blogs
  *     summary: Add a comment on a blog
+ *     security:
+ *       - jwt: []
  *     parameters:
  *       - name: id
  *         in: path
@@ -266,12 +286,14 @@ blogRouter.get("/:id/comments", allComments);
  *                 $ref: '#/components/schemas/CommentResponse'
  *       400:
  *         description: Invalid information provided
+ *       401:
+ *         description: Not logged in
  *       404:
  *         description: Blog not found
  *       500:
  *         description: Internal error
  */
-blogRouter.post("/:id/comments", validatedAddComment, addComment);
+blogRouter.post("/:id/comments", authorized, validatedAddComment, addComment);
 
 /**
  * @swagger
@@ -366,9 +388,11 @@ blogRouter.get("/:id/comments/:commentId", getSingleComment);
  *       400:
  *         description: invalid blog or comment id
  *       404:
- *         description: Blog doesn't exist
+ *         description: Blog or comment doesn't exist
  *       401:
- *         description: Should be loggedin and be an admin to delete a blog comment
+ *         description: Should be loggedin
+ *       403:
+ *         description: Should be an admin to delete a blog comment
  *       500:
  *         description: Internal error
  */
@@ -407,7 +431,9 @@ blogRouter.delete(
  *       400:
  *         description: Invalid blog id
  *       401:
- *         description: You have to be logged in and not admin to like a blog
+ *         description: You have to be logged in to like an article
+ *       403:
+ *         description: Admin is not allowed to like an article
  *       404:
  *         description: Blog not found
  *       500:

@@ -3,7 +3,7 @@ import Joi from "joi";
 const validateMessageSchema = Joi.object({
   contName: Joi.string()
     .regex(/^[A-Z]+ [A-Z]+$/i)
-    .min(3)
+    .min(6)
     .required(),
   contEmail: Joi.string().email().lowercase().required(),
   phone: Joi.string().min(10).max(13).required(),

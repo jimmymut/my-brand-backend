@@ -1,24 +1,32 @@
-import app from "../src/app";
+import app from "../src/index";
 import request from "supertest";
 import User from "../src/models/user";
 import { Blog, Like, Comment } from "../src/models/blogModel";
 import Message from "../src/models/messagesModel";
-import { v2 as cloudinary } from "cloudinary";
-import passport from "passport";
 
 import mongoose from "mongoose";
 
+let server;
+
+beforeAll((done) => {
+  server = app.listen(2500, () => console.log("Server is running at 2500"));
+  done();
+});
 beforeEach(async () => {
   await User.deleteMany();
   await Blog.deleteMany();
   await Message.deleteMany();
   await Like.deleteMany();
   await Comment.deleteMany();
-  jest.setTimeout(40000);
 });
-afterAll(async () => {
-  await mongoose.disconnect();
-  await mongoose.connection.close();
+afterEach(() => {
+  jest.clearAllTimers();
+});
+afterAll((done) => {
+  mongoose.disconnect();
+  mongoose.connection.close();
+  server.close();
+  done();
 });
 
 const image =
@@ -216,7 +224,7 @@ describe("Operations blogs in general", () => {
         });
       expect(errorResponseSave.statusCode).toBe(500);
       jest.spyOn(Blog.prototype, "save").mockClear();
-    });
+    }, 40000);
 
     test("Deleting a blog", async () => {
       await request(app).post("/admins").send({

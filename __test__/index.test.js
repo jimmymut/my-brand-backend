@@ -856,7 +856,7 @@ describe("Message endpoints", () => {
     const mockfn = jest.fn().mockRejectedValue(new Error("Database error"));
     jest.spyOn(Message, "find").mockImplementationOnce(mockfn);
     const response = await request(app)
-      .get("/messages")
+      .get("/messages")s
       .set("Authorization", `Bearer ${adminToken}`);
     expect(response.status).toBe(500);
     jest.spyOn(Message, "find").mockClear();

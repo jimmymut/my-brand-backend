@@ -29,14 +29,3 @@ if (process.env.NODE_ENV === "development") {
     })
     .catch((err) => console.log(err));
 }
-
-app.use(express.json());
-app.use(morgan("dev"));
-app.use(express.urlencoded({ extended: true }));
-app.use(cors());
-
-app.use(passport.initialize());
-
-app.use("/", router);
-
-export default app;

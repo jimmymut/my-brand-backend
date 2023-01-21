@@ -5,10 +5,10 @@ import {
   singleMessage,
   deleteMessage,
   getNumberMessages,
-} from "../../controllers/messagesController";
-import validatedMessage from "../../middlewares/messageSchemaValidator";
-import { authorized } from "../../middlewares/authenticate";
-import { isAdmin } from "../../middlewares/isAdmin";
+} from "../../controllers/messagesController.js";
+import validatedMessage from "../../middlewares/messageSchemaValidator.js";
+import { authorized } from "../../middlewares/authenticate.js";
+import { isAdmin } from "../../middlewares/isAdmin.js";
 
 const msgRouter = express.Router();
 
@@ -31,7 +31,9 @@ const msgRouter = express.Router();
  *               items:
  *                 $ref: '#/components/schemas/MessageResponse'
  *       401:
- *         description: Should be loggedin and be an admin to get all messages
+ *         description: Should be loggedin
+ *       403:
+ *         description: Should be an admin to get all messages
  *       500:
  *         description: Server error
  */
@@ -54,11 +56,13 @@ msgRouter.get("/", authorized, isAdmin, getAllMessages);
  *             schema:
  *               type: object
  *               properties:
- *                  comments:
+ *                  messages:
  *                      type: number
  *                      default: 0
  *       401:
- *         description: Should be loggedin and be an admin to get the number of messages
+ *         description: Should be loggedin
+ *       403:
+ *         description: Should be an admin to get the number of messages
  *       500:
  *         description: Server error
  */
@@ -114,10 +118,12 @@ msgRouter.post("/", validatedMessage, contactMe);
  *                 $ref: '#/components/schemas/MessageResponse'
  *       400:
  *         description: Invalid mongoose id
+ *       401:
+ *         description: Should be loggedin
+ *       403:
+ *         description: Should be an admin to get a single message
  *       404:
  *         description: message not found
- *       401:
- *         description: Should be loggedin and be an admin to get a single message
  *       500:
  *         description: Internal error
  */
@@ -147,10 +153,12 @@ msgRouter.get("/:id", authorized, isAdmin, singleMessage);
  *                 default: Message deleted
  *       400:
  *         description: Invalid mongoose id
+ *       401:
+ *         description: Should be loggedin
+ *       403:
+ *         description: Should be an admin to delete a message
  *       404:
  *         description: Message not found
- *       401:
- *         description: Should be loggedin and be an admin to delete a message
  *       500:
  *         description: Internal error
  */

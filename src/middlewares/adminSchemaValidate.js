@@ -1,4 +1,7 @@
-import { adminSignUpSchema, loginSchema } from "../validations/adminValidate";
+import {
+  adminSignUpSchema,
+  loginSchema,
+} from "../validations/adminValidate.js";
 
 const validatedAdminSignUp = async (req, res, next) => {
   const { error, value } = adminSignUpSchema.validate(req.body, {

@@ -1,6 +1,7 @@
-import User from "../models/user";
+import User from "../models/user.js";
 import bcrypt from "bcrypt";
-import encode from "../utils/encodeToken";
+import encode from "../utils/encodeToken.js";
+import mongoose from "mongoose";
 
 const userSignUp = async (req, res) => {
   try {
@@ -29,6 +30,22 @@ const getAllUsers = async (req, res) => {
   try {
     const users = await User.find({ title: "user" });
     res.status(200).json(users);
+  } catch (error) {
+    res.status(500).json(error);
+  }
+};
+
+const getSingleUser = async (req, res) => {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).send("Invalid id");
+    }
+
+    const user = await User.findOne({ _id: req.params.id });
+    if (!user) {
+      return res.status(404).json({ error: "User not found!" });
+    }
+    res.status(200).json(user);
   } catch (error) {
     res.status(500).json(error);
   }
@@ -74,4 +91,5 @@ export {
   userLogOut,
   notFound,
   getNumberNonAdminUsers,
+  getSingleUser,
 };

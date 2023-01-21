@@ -1,4 +1,4 @@
-import Message from "../models/messagesModel";
+import Message from "../models/messagesModel.js";
 import mongoose from "mongoose";
 
 const getAllMessages = async (req, res) => {
@@ -13,8 +13,8 @@ const getAllMessages = async (req, res) => {
 
 const getNumberMessages = async (req, res) => {
   await Message.find()
-    .then((numComments) => {
-      res.json({ comments: numComments.length });
+    .then((numMessages) => {
+      res.json({ messages: numMessages.length });
     })
     .catch(() => {
       res.status(500).json({ message: "error occured!" });
@@ -24,8 +24,8 @@ const getNumberMessages = async (req, res) => {
 const contactMe = async (req, res) => {
   const { contName, contEmail, phone, message } = req.body;
   const messages = new Message({
-    contName,
-    contEmail,
+    name: contName,
+    email: contEmail,
     phone,
     message,
   });

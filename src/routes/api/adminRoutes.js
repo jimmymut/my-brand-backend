@@ -1,15 +1,14 @@
 import express from "express";
 import {
   adminSignUp,
+  checkIsAdmin,
   deleteUserAccount,
   getAllAdmins,
   getAllAppUsers,
   getNumberAdmins,
   getNumberAllAppUsers,
-} from "../../controllers/adminController";
-import { authorized } from "../../middlewares/authenticate";
-import { isAdmin } from "../../middlewares/isAdmin";
-import { validatedUserSignUp } from "../../middlewares/userSchemaValidate";
+} from "../../controllers/adminController.js";
+import { validatedUserSignUp } from "../../middlewares/userSchemaValidate.js";
 
 const adminRouter = express.Router();
 
@@ -38,7 +37,9 @@ const adminRouter = express.Router();
  *       400:
  *         description: Account exist or invalid information provided
  *       401:
- *         description: Should be loggedin and be an admin to create a new admin account
+ *         description: Should be loggedin
+ *       403:
+ *         description: Should be an admin to create a new admin account
  *       500:
  *         description: Internal error
  */
@@ -63,11 +64,13 @@ adminRouter.post("/", validatedUserSignUp, adminSignUp);
  *               items:
  *                 $ref: '#/components/schemas/UserResponse'
  *       401:
- *         description: Should be loggedin and be an admin to get all admins
+ *         description: Should be loggedin
+ *       403:
+ *         description: Should be an admin to get all admins
  *       500:
  *         description: Internal error
  */
-adminRouter.get("/", authorized, isAdmin, getAllAdmins);
+adminRouter.get("/", getAllAdmins);
 
 /**
  * @swagger
@@ -90,11 +93,15 @@ adminRouter.get("/", authorized, isAdmin, getAllAdmins);
  *                      type: number
  *                      default: 0
  *       401:
- *         description: Should be loggedin and be an admin to get the number of admins
+ *         description: Should be loggedin
+ *       403:
+ *         description: Should be an admin to get the number of admins
  *       500:
  *         description: Internal error
  */
-adminRouter.get("/admins", authorized, isAdmin, getNumberAdmins);
+adminRouter.get("/admins", getNumberAdmins);
+
+adminRouter.get("/dashboard", checkIsAdmin);
 
 /**
  * @swagger
@@ -115,11 +122,13 @@ adminRouter.get("/admins", authorized, isAdmin, getNumberAdmins);
  *               items:
  *                 $ref: '#/components/schemas/UserResponse'
  *       401:
- *         description: Should be loggedin and be an admin to get all app users
+ *         description: Should be loggedin
+ *       403:
+ *         description: Should be an admin to get all app users
  *       500:
  *         description: Internal error
  */
-adminRouter.get("/users", authorized, isAdmin, getAllAppUsers);
+adminRouter.get("/users", getAllAppUsers);
 
 /**
  * @swagger
@@ -142,11 +151,13 @@ adminRouter.get("/users", authorized, isAdmin, getAllAppUsers);
  *                      type: number
  *                      default: 0
  *       401:
- *         description: Should be loggedin and be an admin to get the number all app users
+ *         description: Should be loggedin
+ *       403:
+ *         description: Should be an admin to get the number all app users
  *       500:
  *         description: Internal error
  */
-adminRouter.get("/users/users", authorized, isAdmin, getNumberAllAppUsers);
+adminRouter.get("/users/users", getNumberAllAppUsers);
 
 /**
  * @swagger
@@ -172,13 +183,15 @@ adminRouter.get("/users/users", authorized, isAdmin, getNumberAllAppUsers);
  *                 default: Account deleted
  *       400:
  *         description: Invalid mongoose id
+ *       401:
+ *         description: Should be loggedin
+ *       403:
+ *         description: Should be an admin to delete a user account
  *       404:
  *         description: Account not found
- *       401:
- *         description: Should be loggedin and be an admin to delete a user account
  *       500:
  *         description: Internal error
  */
-adminRouter.delete("/:id", authorized, isAdmin, deleteUserAccount);
+adminRouter.delete("/:id", deleteUserAccount);
 
 export default adminRouter;

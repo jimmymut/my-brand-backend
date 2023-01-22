@@ -8,9 +8,9 @@ const validateAddBlogSchema = Joi.object({
   comments: Joi.array(),
 });
 const validateUpdateBlogSchema = Joi.object({
-  title: Joi.string().min(6),
-  description: Joi.string().min(100),
-  file: Joi.string(),
+  title: Joi.string().min(6).optional(),
+  description: Joi.string().min(100).optional(),
+  file: Joi.any().allow(null).optional().meta({ swaggerType: "file" }),
 }).min(1);
 const validateBlogCommentSchema = Joi.object({
   comment: Joi.string().min(10).required(),

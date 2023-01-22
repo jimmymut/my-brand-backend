@@ -98,6 +98,13 @@ const updateBlog = async (req, res) => {
     if (req.body.description) {
       post.description = req.body.description;
     }
+    if (req.file) {
+      const uploadedImage = await cloudinary.uploader.upload(req.file.path, {
+        folder: "images",
+      });
+      post.file.public_id = uploadedImage.public_id;
+      post.file.url = uploadedImage.secure_url;
+    }
     if (req.body.file) {
       const uploadedImage = await cloudinary.uploader.upload(req.body.file, {
         folder: "images",

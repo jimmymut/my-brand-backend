@@ -4,6 +4,7 @@ import {
   getAllUsers,
   getNumberNonAdminUsers,
   getSingleUser,
+  isUser,
 } from "../../controllers/userController.js";
 import { authorized } from "../../middlewares/authenticate.js";
 import { isAdmin } from "../../middlewares/isAdmin.js";
@@ -93,6 +94,8 @@ userRouter.get("/users", authorized, isAdmin, getNumberNonAdminUsers);
  *       500:
  *         description: Internal error
  */
+userRouter.get("/dashboard", authorized, isUser);
+
 userRouter.get("/:id", getSingleUser);
 
 /**

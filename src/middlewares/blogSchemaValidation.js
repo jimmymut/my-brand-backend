@@ -31,6 +31,7 @@ const validatedAddBlog = async (req, res, next) => {
     next();
   }
 };
+
 const validatedUpdateBlog = async (req, res, next) => {
   const id = req.params.id;
   if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -45,6 +46,7 @@ const validatedUpdateBlog = async (req, res, next) => {
   req.validatedData = value;
   next();
 };
+
 const validatedAddComment = async (req, res, next) => {
   const id = req.params.id;
   if (!mongoose.Types.ObjectId.isValid(id)) {

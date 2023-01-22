@@ -4,6 +4,8 @@ import {
   getAllUsers,
   getNumberNonAdminUsers,
   getSingleUser,
+  isUser,
+  userProfile,
 } from "../../controllers/userController.js";
 import { authorized } from "../../middlewares/authenticate.js";
 import { isAdmin } from "../../middlewares/isAdmin.js";
@@ -66,6 +68,38 @@ userRouter.get("/", authorized, isAdmin, getAllUsers);
  *         description: Internal error
  */
 userRouter.get("/users", authorized, isAdmin, getNumberNonAdminUsers);
+
+userRouter.get("/dashboard", authorized, isUser);
+
+/**
+ * @swagger
+ * /users/profile:
+ *   get:
+ *     tags:
+ *       - Users
+ *     summary: Get a user's name and email
+ *     security:
+ *       - jwt: []
+ *     responses:
+ *       200:
+ *         description: Success
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  name:
+ *                      type: string
+ *                      default: Jimmy
+ *                  email:
+ *                      type: string
+ *                      default: mutabazijimmy9@gmail.com
+ *       401:
+ *         description: not logged in
+ *       500:
+ *         description: Internal error
+ */
+userRouter.get("/profile", authorized, userProfile);
 
 /**
  * @swagger

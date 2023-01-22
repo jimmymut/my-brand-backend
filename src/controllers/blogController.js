@@ -23,8 +23,8 @@ const getAllBlogs = async (req, res) => {
 const addBlog = async (req, res) => {
   try {
     const { title, description } = req.body;
-    if (req.body.file) {
-      const uploadedImage = await cloudinary.uploader.upload(req.body.file, {
+    if (req.file) {
+      const uploadedImage = await cloudinary.uploader.upload(req.file.path, {
         folder: "images",
       });
       const blogs = new Blog({
@@ -38,7 +38,7 @@ const addBlog = async (req, res) => {
       const result = await blogs.save();
       res.status(200).json(result);
     } else {
-      const uploadedImage = await cloudinary.uploader.upload(req.file.path, {
+      const uploadedImage = await cloudinary.uploader.upload(req.body.file, {
         folder: "images",
       });
       const blogs = new Blog({
@@ -97,6 +97,13 @@ const updateBlog = async (req, res) => {
 
     if (req.body.description) {
       post.description = req.body.description;
+    }
+    if (req.file) {
+      const uploadedImage = await cloudinary.uploader.upload(req.file.path, {
+        folder: "images",
+      });
+      post.file.public_id = uploadedImage.public_id;
+      post.file.url = uploadedImage.secure_url;
     }
     if (req.body.file) {
       const uploadedImage = await cloudinary.uploader.upload(req.body.file, {

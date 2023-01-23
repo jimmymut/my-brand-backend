@@ -45,7 +45,16 @@ const getSingleUser = async (req, res) => {
     if (!user) {
       return res.status(404).json({ error: "User not found!" });
     }
-    res.status(200).json(user);
+    res.status(200).json(user.firstName);
+  } catch (error) {
+    res.status(500).json(error);
+  }
+};
+
+const userProfile = async (req, res) => {
+  try {
+    const user = await User.findOne({ _id: req.user._id });
+    res.status(200).json({ name: user.firstName, email: user.email });
   } catch (error) {
     res.status(500).json(error);
   }
@@ -95,4 +104,5 @@ export {
   getNumberNonAdminUsers,
   getSingleUser,
   isUser,
+  userProfile,
 };

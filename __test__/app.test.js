@@ -744,6 +744,13 @@ describe("User endpoints", () => {
     expect(resultServerErr.status).toBe(500);
   });
 
+  test("Get user's info", async () => {
+    const resultCorrect = await request(app)
+      .get(`/users/profile`)
+      .set("Authorization", `Bearer ${adminToken}`);
+    expect(resultCorrect.status).toBe(200);
+  });
+
   test("server error in get all users", async () => {
     const mockfn = jest.fn().mockRejectedValue(new Error("Database error"));
     jest.spyOn(User, "find").mockImplementationOnce(mockfn);

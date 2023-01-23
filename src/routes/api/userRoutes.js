@@ -127,6 +127,8 @@ userRouter.get("/profile", authorized, userProfile);
  *       500:
  *         description: Internal error
  */
+userRouter.get("/dashboard", authorized, isUser);
+
 userRouter.get("/:id", getSingleUser);
 
 /**

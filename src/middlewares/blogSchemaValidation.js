@@ -37,14 +37,15 @@ const validatedUpdateBlog = async (req, res, next) => {
   if (!mongoose.Types.ObjectId.isValid(id)) {
     return res.status(400).send("Invalid id");
   }
-  const { error, value } = validateUpdateBlogSchema.validate(req.body, {
-    abortEarly: false,
-  });
-  if (error) {
-    return res.status(400).send(error.message);
-  }
-  req.validatedData = value;
-  next();
+    const { error, value } = validateUpdateBlogSchema.validate(req.body, {
+      abortEarly: false,
+    });
+    if (error) {
+      return res.status(400).send(error.message);
+    }
+    req.validatedData = value;
+    next();
+  
 };
 
 const validatedAddComment = async (req, res, next) => {

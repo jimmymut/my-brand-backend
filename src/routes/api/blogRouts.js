@@ -146,7 +146,6 @@ blogRouter.get("/:id", getSingleBlog);
  *     tags:
  *       - Blogs
  *     summary: Update/Edit a blog
- *     description: multipart/form-data Content-Type is currently not working to update an article, Please choose application/json.
  *     security:
  *       - jwt: []
  *     parameters:

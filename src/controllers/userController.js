@@ -60,7 +60,9 @@ const getNumberNonAdminUsers = async (req, res) => {
       res.status(500).json({ Message: "Error occured!" });
     });
 };
-
+const isUser = async (req, res) => {
+  res.status(200).json("Is a user");
+};
 const userLogin = async (req, res) => {
   try {
     const token = await encode(req.user._id);
@@ -92,4 +94,5 @@ export {
   notFound,
   getNumberNonAdminUsers,
   getSingleUser,
+  isUser,
 };

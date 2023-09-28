@@ -11,11 +11,7 @@
   },
   "betterScripts": {
     "dev": {
-      "command": "nodemon --exec babel-node ./src/index.js",
-      "env": {
-        "NODE_ENV": "development",
-        "PORT": 5000
-      }
+      "command": "nodemon --exec babel-node ./src/index.js"
     }
   },
   "jest": {
@@ -50,13 +46,16 @@
     "cors": "^2.8.5",
     "dotenv": "^16.0.3",
     "express": "^4.18.2",
+    "google-auth-library": "^9.0.0",
     "joi": "^17.7.0",
     "jsonwebtoken": "^9.0.0",
     "lodash": "^4.17.21",
     "mongoose": "^6.8.0",
     "morgan": "^1.10.0",
     "multer": "^1.4.5-lts.1",
+    "nodemailer": "^6.9.4",
     "passport": "^0.6.0",
+    "passport-google-oauth20": "^2.0.0",
     "passport-jwt": "^4.0.0",
     "passport-local": "^1.0.0",
     "swagger-jsdoc": "^6.2.7",

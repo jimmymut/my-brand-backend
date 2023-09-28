@@ -118,10 +118,10 @@ const blogSchema = new Schema(
       default: [],
     },
 
-    comments: {
-      type: Array,
-      default: [],
-    },
+    comments: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Comment",
+    }],
   },
   { timestamps: true }
 );
@@ -177,6 +177,10 @@ const commentSchema = new Schema({
     ref: "Blog",
   },
   userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+  },
+  user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
   },

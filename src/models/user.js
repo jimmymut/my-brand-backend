@@ -69,7 +69,6 @@ const userSchema = mongoose.Schema(
     },
     lastName: {
       type: String,
-      required: true,
     },
     email: {
       type: String,
@@ -77,11 +76,16 @@ const userSchema = mongoose.Schema(
     },
     password: {
       type: String,
-      required: true,
     },
     title: {
       type: String,
       default: "user",
+    },
+    googleId: {
+      type: String,
+    },
+    proPic: {
+      type: String,
     },
   },
   { timestamps: true }

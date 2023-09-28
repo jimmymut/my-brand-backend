@@ -6,6 +6,7 @@ import {
   getSingleUser,
   isUser,
   userProfile,
+  googleAuth,
 } from "../../controllers/userController.js";
 import { authorized } from "../../middlewares/authenticate.js";
 import { isAdmin } from "../../middlewares/isAdmin.js";
@@ -157,5 +158,7 @@ userRouter.get("/:id", getSingleUser);
  *         description: Server error
  */
 userRouter.post("/", validatedUserSignUp, userSignUp);
+
+userRouter.post('/auth/google', googleAuth);
 
 export default userRouter;

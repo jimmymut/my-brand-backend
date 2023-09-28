@@ -1,22 +1,14 @@
 import { Blog, Comment, Like } from "../models/blogModel.js";
-import { v2 as cloudinary } from "cloudinary";
 import mongoose from "mongoose";
-import "dotenv/config";
-import { result } from "lodash";
-
-cloudinary.config({
-  cloud_name: process.env.CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
+import { cloudinary } from "../config/index.js";
 
 const getAllBlogs = async (req, res) => {
   await Blog.find()
     .then((blogs) => {
-      res.status(200).json(blogs);
+      return res.status(200).json(blogs);
     })
     .catch(() => {
-      res.status(500).json({ Error: "Error occured!" });
+      return res.status(500).json({ Error: "Error occured!" });
     });
 };
 
@@ -36,7 +28,7 @@ const addBlog = async (req, res) => {
         },
       });
       const result = await blogs.save();
-      res.status(200).json(result);
+      return res.status(200).json(result);
     } else {
       const uploadedImage = await cloudinary.uploader.upload(req.body.file, {
         folder: "images",
@@ -50,20 +42,20 @@ const addBlog = async (req, res) => {
         },
       });
       const result = await blogs.save();
-      res.status(200).json(result);
+      return res.status(200).json(result);
     }
   } catch (error) {
-    res.status(500).json({ Error: "Something went wrong!" });
+    return res.status(500).json({ Error: "Something went wrong!" });
   }
 };
 
 const getNumberAllBlogs = async (req, res) => {
-  Blog.find()
+  Blog.countDocuments()
     .then((result) => {
-      res.status(200).json({ Blogs: result.length });
+      return res.status(200).json({ Blogs: result });
     })
     .catch((err) => {
-      res.status(500).json({ Message: "Error occured!" });
+      return res.status(500).json({ Message: `Error occured! ${err}` });
     });
 };
 
@@ -73,14 +65,18 @@ const getSingleBlog = async (req, res) => {
     return res.status(400).send("Invalid id");
   }
   Blog.findOne({ _id: id })
+    .populate({
+      path: "comments",
+      populate: { path: "user", select: ["firstName", "lastName"] },
+    })
     .then((blog) => {
       if (!blog) {
         return res.status(404).json("No blog found!");
       }
-      res.status(200).json(blog);
+      return res.status(200).json(blog);
     })
     .catch((error) => {
-      res.status(500).json(error);
+      return res.status(500).json({ error: `Error occured! ${error}` });
     });
 };
 
@@ -113,10 +109,10 @@ const updateBlog = async (req, res) => {
       post.file.url = uploadedImage.secure_url;
     }
 
-    await post.save();
-    res.status(200).json(post);
-  } catch {
-    res.status(500).json({ error: "Server error!" });
+    const updatedPost = await post.save();
+    return res.status(200).json({ post: updatedPost });
+  } catch (err) {
+    return res.status(500).json({ error: `Error occured! ${err}` });
   }
 };
 
@@ -133,9 +129,9 @@ const deleteBlog = async (req, res) => {
     await Blog.deleteOne({ _id: id });
     await Like.deleteMany({ blogId: id });
     await Comment.deleteMany({ blogId: id });
-    res.status(204).json({ Message: "blog deleted!" });
+    return res.status(204).json({ Message: "blog deleted!" });
   } catch (error) {
-    res.status(500).json({ error });
+    return res.status(500).json({ error: `Error occured! ${error}` });
   }
 };
 
@@ -144,15 +140,16 @@ const allComments = async (req, res) => {
   if (!mongoose.Types.ObjectId.isValid(id)) {
     return res.status(400).send("Invalid id");
   }
-  await Blog.findById(id)
-    .then((blog) => {
-      if (!blog) {
-        return res.status(404).json("No blog found!");
-      }
-      res.status(200).json(blog.comments);
+  await Comment.find({ blogId: id })
+    .populate({
+      path: "user",
+      select: ["firstName", "lastName"],
+    })
+    .then((comments) => {
+      return res.status(200).json({ comments });
     })
     .catch((error) => {
-      res.status(500).json(error);
+      return res.status(500).json({ error: `Error occured! ${error}` });
     });
 };
 
@@ -166,11 +163,11 @@ const numberOfBlogComments = async (req, res) => {
     return res.status(404).json({ error: "Blog doesn't exist!" });
   }
 
-  Comment.find({ blogId: id })
+  Comment.countDocuments({ blogId: id })
     .then((result) => {
-      res.status(200).json({ comments: result.length });
+      return res.status(200).json({ comments: result });
     })
-    .catch((err) => res.status(500).json(err));
+    .catch((err) => res.status(500).json({ error: `Error occured! ${err}` }));
 };
 
 const addComment = async (req, res) => {
@@ -184,21 +181,30 @@ const addComment = async (req, res) => {
     comment: req.body.comment,
     blogId: id,
     userId: newUserId,
+    user: newUserId,
   });
 
   newcomment
     .save()
     .then(async (savedCmt) => {
-      Blog.findByIdAndUpdate(id, { $push: { comments: newcomment } })
+      savedCmt.populate({
+        path: "user",
+        select: ["firstName", "lastName"],
+      });
+      Blog.findByIdAndUpdate(id, { $push: { comments: newcomment._id } })
         .then(() => {
-          res.status(200).json(savedCmt);
+          return res.status(200).json(savedCmt);
         })
-        .catch(() => {
-          res.status(500).json({ error: "Error occurred on blog update" });
+        .catch((error) => {
+          return res
+            .status(500)
+            .json({ error: `Error occurred on blog update ${error}` });
         });
     })
-    .catch(() => {
-      res.status(500).json({ error: "Failed to save a comment" });
+    .catch((error) => {
+      return res
+        .status(500)
+        .json({ error: `Failed to save a comment ${error}` });
     });
 };
 
@@ -224,12 +230,15 @@ const deleteComment = async (req, res) => {
 
     await Comment.deleteOne({ _id: commentExist._id });
 
-    await Blog.findByIdAndUpdate(blogId, { $pull: { comments: commentExist } });
-    res.status(200).json("Comment deleted!");
+    await Blog.findByIdAndUpdate(blogId, {
+      $pull: { comments: commentExist._id },
+    });
+    return res.status(200).json("Comment deleted!");
   } catch (error) {
-    res.status(500).json(error);
+    return res.status(500).json({ error: `Error occured! ${error}` });
   }
 };
+
 const getSingleComment = async (req, res) => {
   try {
     const blogId = req.params.id;
@@ -244,13 +253,16 @@ const getSingleComment = async (req, res) => {
     if (!blogExist) {
       return res.status(404).json({ error: "Blog doesn't exist!" });
     }
-    const commentExist = await Comment.findById(commentId);
+    const commentExist = await Comment.findById(commentId).populate({
+      path: "user",
+      select: ["firstName", "lastName"],
+    });
     if (!commentExist) {
       return res.status(404).json({ error: "Comment doesn't exist!" });
     }
-    res.status(200).json(commentExist);
+    return res.status(200).json(commentExist);
   } catch (error) {
-    res.status(500).json(error);
+    return res.status(500).json({ error: `Error occured! ${error}` });
   }
 };
 
@@ -280,15 +292,17 @@ const likeBlog = async (req, res) => {
           .then(async () => {
             Like.findOneAndDelete({ _id: like_id })
               .then(async () => {
-                const blg = await Blog.findById(id);
-                res.status(200).json({ likes: blg.likes.length });
+                const blgLikes = await Like.countDocuments({ blogId: id });
+                return res.status(200).json({ likes: blgLikes });
               })
               .catch((error) => {
-                res.status(500).json({ error });
+                return res
+                  .status(500)
+                  .json({ error: `Error occured! ${error}` });
               });
           })
-          .catch(() => {
-            return res.status(500).json({ error: "error occured!" });
+          .catch((error) => {
+            return res.status(500).json({ error: `Error occured! ${error}` });
           });
       } else {
         const like = new Like({
@@ -302,17 +316,18 @@ const likeBlog = async (req, res) => {
             { new: true }
           )
             .then(async () => {
-              const art = await Blog.findById(id);
-              res.status(200).json({ likes: art.likes.length });
+              const blgLikes = await Like.countDocuments({ blogId: id });
+              return res.status(200).json({ likes: blgLikes });
             })
             .catch((error) => {
-              res.status(500).json({ error });
+              return res.status(500).json({ error: `Error occured! ${error}` });
             });
         });
       }
     }
   );
 };
+
 const likesOnBlog = async (req, res) => {
   const id = req.params.id;
   if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -322,12 +337,12 @@ const likesOnBlog = async (req, res) => {
   if (!exist) {
     return res.status(404).json({ error: "Blog doesn't exist!" });
   }
-  Blog.findById(id)
-    .then((blog) => {
-      res.status(200).json({ likes: blog.likes.length });
+  await Like.countDocuments({ blogId: id })
+    .then((blogLikes) => {
+      return res.status(200).json({ likes: blogLikes });
     })
-    .catch(() => {
-      res.status(500).json({ error: "error occured!" });
+    .catch((error) => {
+      return res.status(500).json({ error: `Error occured! ${error}` });
     });
 };
 

@@ -9,6 +9,8 @@ import swaggerUi from "swagger-ui-express";
 import specs from "../utils/swaggerConfig.js";
 import { authorized } from "../middlewares/authenticate.js";
 import { isAdmin } from "../middlewares/isAdmin.js";
+import workRouter from "./api/workRoutes.js";
+import skillRouter from "./api/skillsRoutes.js";
 
 const router = express.Router();
 
@@ -18,6 +20,8 @@ router.use("/messages", msgRouter);
 router.use("/admins", authorized, isAdmin, adminRouter);
 router.use("/users", userRouter);
 router.use("/api/docs", swaggerUi.serve, swaggerUi.setup(specs));
+router.use("/works", workRouter);
+router.use("/skills", skillRouter);
 
 router.all("*", notFound);
 

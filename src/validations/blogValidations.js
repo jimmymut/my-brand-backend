@@ -4,8 +4,6 @@ const validateAddBlogSchema = Joi.object({
   title: Joi.string().min(6).required(),
   description: Joi.string().min(100).required(),
   file: Joi.any().required(),
-  likes: Joi.array(),
-  comments: Joi.array(),
 });
 const validateUpdateBlogSchema = Joi.object({
   title: Joi.string().min(6).optional(),

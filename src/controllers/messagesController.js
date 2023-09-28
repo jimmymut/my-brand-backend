@@ -1,13 +1,15 @@
 import Message from "../models/messagesModel.js";
 import mongoose from "mongoose";
+import { emailService } from "../utils/EmailService.js";
+import { own_email } from "../config";
 
 const getAllMessages = async (req, res) => {
   await Message.find()
     .then((messages) => {
-      res.status(200).json(messages);
+      return res.status(200).json(messages);
     })
     .catch(() => {
-      res.status(500).json({ message: "error occured!" });
+      return res.status(500).json({ message: "error occured!" });
     });
 };
 
@@ -17,7 +19,7 @@ const getNumberMessages = async (req, res) => {
       res.json({ messages: numMessages.length });
     })
     .catch(() => {
-      res.status(500).json({ message: "error occured!" });
+      return res.status(500).json({ message: "error occured!" });
     });
 };
 
@@ -31,11 +33,16 @@ const contactMe = async (req, res) => {
   });
   await messages
     .save()
-    .then((result) => {
-      res.status(200).json(result);
+    .then(async (result) => {
+      await emailService(
+        own_email,
+        `${result.name} sent you a message`,
+        `<p>Name: ${result.name}<br/>Email: ${result.email}<br/>Phone Number: ${result.phone}<br/>Message: ${result.message}</p>`
+      );
+      return res.status(200).json(result);
     })
     .catch(() => {
-      res.status(500).json({ Error: "send message failed" });
+      return res.status(500).json({ Error: "send message failed" });
     });
 };
 
@@ -48,10 +55,9 @@ const singleMessage = async (req, res) => {
     if (!exist) {
       return res.status(404).json({ error: "Message not found!" });
     }
-    const message = await Message.findOne({ _id: req.params.id });
-    res.status(200).json(message);
+    return res.status(200).json({ message: exist });
   } catch (error) {
-    res.status(500).json({ Error: error });
+    return res.status(500).json({ Error: `Error occurred ${error}` });
   }
 };
 
@@ -65,9 +71,9 @@ const deleteMessage = async (req, res) => {
       return res.status(404).json({ error: "Message not found!" });
     }
     await Message.findOneAndDelete({ _id: req.params.id });
-    res.status(204).json("Message deleted");
+    return res.status(204).json("Message deleted");
   } catch {
-    res.status(500).json("Error occured!");
+    return res.status(500).json("Error occured!");
   }
 };
 

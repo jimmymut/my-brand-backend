@@ -1,8 +1,6 @@
 import { Blog, Comment, Like } from "../models/blogModel.js";
 import mongoose from "mongoose";
 import { cloudinary } from "../config";
-
-
 const getAllBlogs = async (req, res) => {
   await Blog.find()
     .then((blogs) => {

@@ -1,6 +1,7 @@
 import { Blog, Comment, Like } from "../models/blogModel.js";
 import mongoose from "mongoose";
-import { cloudinary } from "../config/index.js";
+import { cloudinary } from "../config";
+
 
 const getAllBlogs = async (req, res) => {
   await Blog.find()
@@ -14,9 +15,8 @@ const getAllBlogs = async (req, res) => {
 
 const addBlog = async (req, res) => {
   try {
-    const { title, description } = req.body;
-    if (req.file) {
-      const uploadedImage = await cloudinary.uploader.upload(req.file.path, {
+    const { title, description, file } = req.validatedData;
+    const uploadedImage = await cloudinary.uploader.upload(file, {
         folder: "images",
       });
       const blogs = new Blog({
@@ -29,22 +29,8 @@ const addBlog = async (req, res) => {
       });
       const result = await blogs.save();
       return res.status(200).json(result);
-    } else {
-      const uploadedImage = await cloudinary.uploader.upload(req.body.file, {
-        folder: "images",
-      });
-      const blogs = new Blog({
-        title,
-        description,
-        file: {
-          public_id: uploadedImage.public_id,
-          url: uploadedImage.secure_url,
-        },
-      });
-      const result = await blogs.save();
-      return res.status(200).json(result);
-    }
   } catch (error) {
+    console.log(error);
     return res.status(500).json({ Error: "Something went wrong!" });
   }
 };

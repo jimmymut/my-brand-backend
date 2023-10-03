@@ -6,16 +6,6 @@ import {
 import mongoose from "mongoose";
 
 const validatedAddBlog = async (req, res, next) => {
-  if (req.body.file) {
-    const { error, value } = validateAddBlogSchema.validate(req.body, {
-      abortEarly: false,
-    });
-    if (error) {
-      return res.status(400).send(error.message);
-    }
-    req.validatedData = value;
-    next();
-  } else {
     const data = {
       title: req.body.title,
       description: req.body.description,
@@ -29,7 +19,6 @@ const validatedAddBlog = async (req, res, next) => {
     }
     req.validatedData = value;
     next();
-  }
 };
 
 const validatedUpdateBlog = async (req, res, next) => {

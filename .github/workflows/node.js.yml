@@ -9,22 +9,6 @@ on:
   pull_request:
     branches: [ "main" ]
 
-env:
-  TEST_PORT: ${{ secrets.TEST_PORT }}
-  CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
-  TEST_DB: ${{ secrets.TEST_DB }}
-  SENDER_EMAIL_PASSWORD: ${{ secrets.SENDER_EMAIL_PASSWORD }}
-  SENDER_EMAIL: ${{ secrets.SENDER_EMAIL }}
-  SECRET_KEY: ${{ secrets.SECRET_KEY }}
-  REMOTE_DB: ${{ secrets.REMOTE_DB }}
-  PORT: ${{ secrets.PORT }}
-  OWN_EMAIL: ${{ secrets.OWN_EMAIL }}
-  GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
-  GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
-  DEV_DB: ${{ secrets.DEV_DB }}
-  CLOUD_NAME: ${{ secrets.CLOUD_NAME }}
-  CLOUD_NAMECLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
-
 jobs:
   build:
 
@@ -34,6 +18,22 @@ jobs:
       matrix:
         node-version: [20]
         # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
+
+    env:
+        TEST_PORT: ${{ secrets.TEST_PORT }}
+        CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+        TEST_DB: ${{ secrets.TEST_DB }}
+        SENDER_EMAIL_PASSWORD: ${{ secrets.SENDER_EMAIL_PASSWORD }}
+        SENDER_EMAIL: ${{ secrets.SENDER_EMAIL }}
+        SECRET_KEY: ${{ secrets.SECRET_KEY }}
+        REMOTE_DB: ${{ secrets.REMOTE_DB }}
+        PORT: ${{ secrets.PORT }}
+        OWN_EMAIL: ${{ secrets.OWN_EMAIL }}
+        GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+        GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+        DEV_DB: ${{ secrets.DEV_DB }}
+        CLOUD_NAME: ${{ secrets.CLOUD_NAME }}
+        CLOUD_NAMECLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
 
     steps:
     - uses: actions/checkout@v3

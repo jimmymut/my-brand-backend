@@ -1,12 +1,6 @@
 import express from "express";
 import {
-  userSignUp,
-  getAllUsers,
-  getNumberNonAdminUsers,
-  getSingleUser,
-  isUser,
-  userProfile,
-  googleAuth,
+  UserController,
 } from "../../controllers/userController.js";
 import { authorized } from "../../middlewares/authenticate.js";
 import { isAdmin } from "../../middlewares/isAdmin.js";
@@ -39,7 +33,7 @@ const userRouter = express.Router();
  *       500:
  *         description: Internal error
  */
-userRouter.get("/", authorized, isAdmin, getAllUsers);
+userRouter.get("/", authorized, isAdmin, UserController.getAllUsers);
 
 /**
  * @swagger
@@ -68,9 +62,9 @@ userRouter.get("/", authorized, isAdmin, getAllUsers);
  *       500:
  *         description: Internal error
  */
-userRouter.get("/users", authorized, isAdmin, getNumberNonAdminUsers);
+userRouter.get("/users", authorized, isAdmin, UserController.getNumberNonAdminUsers);
 
-userRouter.get("/dashboard", authorized, isUser);
+userRouter.get("/dashboard", authorized, UserController.isUser);
 
 /**
  * @swagger
@@ -100,7 +94,7 @@ userRouter.get("/dashboard", authorized, isUser);
  *       500:
  *         description: Internal error
  */
-userRouter.get("/profile", authorized, userProfile);
+userRouter.get("/profile", authorized, UserController.userProfile);
 
 /**
  * @swagger
@@ -128,9 +122,9 @@ userRouter.get("/profile", authorized, userProfile);
  *       500:
  *         description: Internal error
  */
-userRouter.get("/dashboard", authorized, isUser);
+userRouter.get("/dashboard", authorized, UserController.isUser);
 
-userRouter.get("/:id", getSingleUser);
+userRouter.get("/:id", UserController.getSingleUser);
 
 /**
  * @swagger
@@ -157,8 +151,8 @@ userRouter.get("/:id", getSingleUser);
  *       500:
  *         description: Server error
  */
-userRouter.post("/", validatedUserSignUp, userSignUp);
+userRouter.post("/", validatedUserSignUp, UserController.userSignUp);
 
-userRouter.post('/auth/google', googleAuth);
+userRouter.post('/auth/google', UserController.googleAuth);
 
 export default userRouter;

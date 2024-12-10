@@ -73,12 +73,14 @@ const userSchema = mongoose.Schema(
     email: {
       type: String,
       required: true,
+      unique: true
     },
     password: {
       type: String,
     },
     title: {
       type: String,
+      enum: ["user", "admin"],
       default: "user",
     },
     googleId: {
@@ -87,6 +89,10 @@ const userSchema = mongoose.Schema(
     proPic: {
       type: String,
     },
+    isLoggedIn: {
+      type: Boolean,
+      default: false
+    }
   },
   { timestamps: true }
 );

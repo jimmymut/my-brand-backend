@@ -1,7 +1,7 @@
 import express from "express";
 import { validatedUserLogin } from "../../middlewares/userSchemaValidate.js";
 import { authorized } from "../../middlewares/authenticate.js";
-import { userLogin, userLogOut } from "../../controllers/userController.js";
+import { UserController } from "../../controllers/userController.js";
 import { authUserLogin } from "../../middlewares/authenticate.js";
 
 const loginout = express.Router();
@@ -46,7 +46,7 @@ const loginout = express.Router();
  *       500:
  *         description: Internal error
  */
-loginout.post("/auth/login", validatedUserLogin, authUserLogin, userLogin);
+loginout.post("/auth/login", validatedUserLogin, authUserLogin, UserController.userLogin);
 
 /**
  * @swagger
@@ -73,6 +73,6 @@ loginout.post("/auth/login", validatedUserLogin, authUserLogin, userLogin);
  *       500:
  *         description: Internal error
  */
-loginout.post("/logout", authorized, userLogOut);
+loginout.post("/logout", authorized, UserController.userLogOut);
 
 export default loginout;

@@ -48,8 +48,7 @@ passport.use(
         if (!user.isLoggedIn) {
           return done(null, false, { message: "Please login first!" });
         }
-        const { password: psw, isLoggedIn, ...rest } = user._doc;
-        return done(null, rest);
+        return done(null, user);
       } catch (error) {
         console.log(error);
         return done({ message: "Server Error!" }, false);

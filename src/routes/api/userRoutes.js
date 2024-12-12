@@ -4,7 +4,8 @@ import {
 } from "../../controllers/userController.js";
 import { authorized } from "../../middlewares/authenticate.js";
 import { isAdmin } from "../../middlewares/isAdmin.js";
-import { validatedUserSignUp } from "../../middlewares/userSchemaValidate.js";
+import * as userValidation from "../../middlewares/userSchemaValidate.js";
+import { validateGoogle } from "../../middlewares/googleValidator.js";
 
 const userRouter = express.Router();
 
@@ -151,8 +152,57 @@ userRouter.get("/:id", UserController.getSingleUser);
  *       500:
  *         description: Server error
  */
-userRouter.post("/", validatedUserSignUp, UserController.userSignUp);
+userRouter.post("/", userValidation.validatedUserSignUp, UserController.userSignUp);
 
-userRouter.post('/auth/google', UserController.googleAuth);
+userRouter.post('/auth/google', validateGoogle, UserController.googleAuth);
+
+/**
+ * @swagger
+ * /users/change-password:
+ *   patch:
+ *     tags:
+ *       - Users
+ *     summary: Change password
+ *     security:
+ *       - jwt: []
+ *     requestBody:
+ *         required: true
+ *         content:
+ *           application/json:
+ *             schema:
+ *                type: object
+ *                properties:
+ *                  old:
+ *                    type: string
+ *                    default: 12345!
+ *                  newPwd:
+ *                    type: string
+ *                    default: 12345!
+ *                required:
+ *                  - old
+ *                  - newPwd
+ *     responses:
+ *       200:
+ *         description: Success
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                      type: string
+ *                      default: Password changed successfully
+ *       400:
+ *         description: Bad request
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbbiden
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Server error
+ */
+userRouter.patch("/change-password", authorized, userValidation.validatedChangePassword, UserController.changePassword);
 
 export default userRouter;

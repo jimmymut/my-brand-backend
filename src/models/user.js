@@ -1,3 +1,4 @@
+import moment from "moment";
 import mongoose from "mongoose";
 
 /**
@@ -92,6 +93,16 @@ const userSchema = mongoose.Schema(
     isLoggedIn: {
       type: Boolean,
       default: false
+    },
+    verifiedAt: {
+      type: Date,
+      required: false,
+    },
+    deleteAt: {
+      type: Date,
+      default: moment().add(30, "days").toDate(),
+      required: false,
+      expires: 0,
     }
   },
   { timestamps: true }

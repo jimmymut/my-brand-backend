@@ -6,7 +6,7 @@ export const emailService = async (
   subject,
   htmlTemplate,
 ) => {
-  let transporter = nodemailer.createTransport({
+  const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
     port: 587,
     secure: false,
@@ -19,7 +19,7 @@ export const emailService = async (
     },
   });
 
-  let mailOptions = {
+  const mailOptions = {
     from: `"Jimmy's Website" ${sender_email}`,
     to,
     subject,

@@ -5,7 +5,9 @@ export const validateSkill = async (req, res, next) => {
     abortEarly: false,
   });
   if (error) {
-    return res.status(400).send(error.message);
+    return res.status(400).json({
+      message: error.message,
+    });
   }
   req.validatedData = value;
   next();
@@ -16,7 +18,9 @@ export const validateUpdateSkill = async (req, res, next) => {
     abortEarly: false,
   });
   if (error) {
-    return res.status(400).send(error.message);
+    return res.status(400).json({
+      message: error.message,
+    });
   }
   req.validatedData = value;
   next();

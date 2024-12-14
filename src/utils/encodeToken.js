@@ -1,9 +1,10 @@
 import jwt from "jsonwebtoken";
-import "dotenv/config";
+import { jwt_expiry_time, jwt_secret_key, jwt_verify_secret_key } from "../config";
 
-const encode = async (user) => {
-  const token = jwt.sign(user, process.env.SECRET_KEY, {
-    expiresIn: process.env.JWT_EXPIRATION_TIME??"2h",
+const encode = (user, expiresIn = null, verify = false) => {
+  const secret_key = verify? jwt_verify_secret_key: jwt_secret_key;
+  const token = jwt.sign(user, secret_key, {
+    expiresIn: expiresIn??jwt_expiry_time??"2h",
   });
   return token;
 };

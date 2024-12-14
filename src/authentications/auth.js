@@ -3,7 +3,8 @@ import User from "../models/user";
 import { Strategy as JwtStrategy, ExtractJwt } from "passport-jwt";
 import { Strategy as LocalStrategy } from "passport-local";
 import bcrypt from "bcrypt";
-import "dotenv/config";
+import { jwt_secret_key, jwt_verify_secret_key } from "../config";
+import Token from "../models/token";
 
 passport.use(
   new LocalStrategy(
@@ -21,8 +22,7 @@ passport.use(
         if (!isMatch) {
           return done(null, false, { message: "Incorrect password or email" });
         }
-        await User.updateOne({_id: user._id}, {$set: { isLoggedIn: true }});
-        const { password: psw, isLoggedIn, ...rest } = user._doc;
+        const { password: psw, ...rest } = user._doc;
         return done(null, rest);
       } catch (error) {
         console.log(error);
@@ -36,7 +36,7 @@ passport.use(
   new JwtStrategy(
     {
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-      secretOrKey: process.env.SECRET_KEY,
+      secretOrKey: jwt_secret_key,
     },
     async (jwtPayload, done) => {
       try {
@@ -45,13 +45,32 @@ passport.use(
         if (!user) {
           return done(null, false, { message: "User not found" });
         }
-        if (!user.isLoggedIn) {
-          return done(null, false, { message: "Please login first!" });
-        }
         return done(null, user);
       } catch (error) {
         console.log(error);
         return done({ message: "Server Error!" }, false);
+      }
+    }
+  )
+);
+
+passport.use(
+  "verify-email-jwt",
+  new JwtStrategy(
+    {
+      jwtFromRequest: ExtractJwt.fromUrlQueryParameter("tkn"),
+      secretOrKey: jwt_verify_secret_key,
+    },
+    async (jwtPayload, done) => {
+      try {
+        const token = await Token.findById(jwtPayload._id);
+        if (!token) {
+          return done(null, false, { message: "Verification link not found or has expired" });
+        }
+        return done(null, token);
+      } catch (error) {
+        console.log(error);
+        return done(null, false, { message: "Server Error!" });
       }
     }
   )

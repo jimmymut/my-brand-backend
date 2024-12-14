@@ -90,10 +90,6 @@ const userSchema = mongoose.Schema(
     proPic: {
       type: String,
     },
-    isLoggedIn: {
-      type: Boolean,
-      default: false
-    },
     verifiedAt: {
       type: Date,
       required: false,
@@ -103,7 +99,12 @@ const userSchema = mongoose.Schema(
       default: moment().add(30, "days").toDate(),
       required: false,
       expires: 0,
+    },
+    currentToken: {
+      type: String,
+      required: false,
     }
+
   },
   { timestamps: true }
 );

@@ -2,7 +2,7 @@ import express from "express";
 import {
   UserController,
 } from "../../controllers/userController.js";
-import { authorized } from "../../middlewares/authenticate.js";
+import { authorized, authorizeVerifyEmail } from "../../middlewares/authenticate.js";
 import { isAdmin } from "../../middlewares/isAdmin.js";
 import * as userValidation from "../../middlewares/userSchemaValidate.js";
 import { validateGoogle } from "../../middlewares/googleValidator.js";
@@ -125,7 +125,6 @@ userRouter.get("/profile", authorized, UserController.userProfile);
  */
 userRouter.get("/dashboard", authorized, UserController.isUser);
 
-userRouter.get("/:id", UserController.getSingleUser);
 
 /**
  * @swagger
@@ -151,7 +150,7 @@ userRouter.get("/:id", UserController.getSingleUser);
  *         description: Account exist or invalid information
  *       500:
  *         description: Server error
- */
+*/
 userRouter.post("/", userValidation.validatedUserSignUp, UserController.userSignUp);
 
 userRouter.post('/auth/google', validateGoogle, UserController.googleAuth);
@@ -202,7 +201,40 @@ userRouter.post('/auth/google', validateGoogle, UserController.googleAuth);
  *         description: User not found
  *       500:
  *         description: Server error
- */
+*/
 userRouter.patch("/change-password", authorized, userValidation.validatedChangePassword, UserController.changePassword);
+
+userRouter.get("/verify-email", authorizeVerifyEmail, UserController.verifyEmail);
+
+/**
+ * @swagger
+ * /users/resend-verification:
+ *   get:
+ *     tags:
+ *       - Users
+ *     summary: Request resend verification email
+ *     security:
+ *       - jwt: []
+ *     responses:
+ *       200:
+ *         description: Success
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                      type: string
+ *                      default: Verification email is successfull sent, check your email
+ *       400:
+ *         description: Bad request
+ *       401:
+ *         description: Not logged
+ *       500:
+ *         description: Server error
+ */
+userRouter.get("/resend-verification", authorized, UserController.resendVerificationEmail);
+
+userRouter.get("/:id", UserController.getSingleUser);
 
 export default userRouter;

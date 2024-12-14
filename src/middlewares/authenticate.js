@@ -12,7 +12,12 @@ const auth = (stratege, req, res, next) => {
         if (info) return res.status(401).json({ message: info.message });
         return res.status(401).json({ message: "Unauthorized" });
       }
-      req.user = user;
+      if(user.user){
+        req.user = user.user;
+        req.otherInfo = user.payload;
+      }else{
+        req.user = user;
+      }
       return next();
     }
   )(req, res, next);
@@ -36,7 +41,8 @@ export const authorizeVerifyEmail = (req, res, next) => {
           );
         return res.redirect(`${frontend_base_url}?verify_error=Unauthorized`);
       }
-      req.verifyToken = user;
+      req.verifyToken = user.token;
+      req.otherInfo = user.payload;
       return next();
     }
   )(req, res, next);

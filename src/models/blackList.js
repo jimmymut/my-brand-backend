@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-const TokenSchema = mongoose.Schema(
+const BlackListSchema = mongoose.Schema(
   {
     token: {
       type: String,
@@ -16,6 +16,6 @@ const TokenSchema = mongoose.Schema(
   { versionKey: false }
 );
 
-const Token = mongoose.model("Token", TokenSchema);
+const BlackList = mongoose.model("BlackList", BlackListSchema);
 
-export default Token;
+export default BlackList;

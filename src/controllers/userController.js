@@ -11,7 +11,8 @@ import {
 import { emailService } from "../utils/EmailService.js";
 import Token from "../models/token.js";
 import moment from "moment";
-import jwt from "jsonwebtoken";
+import BlackList from "../models/blackList.js";
+import blackList from "../utils/blacklist.js";
 
 export class UserController {
   static async userSignUp(req, res) {
@@ -24,23 +25,29 @@ export class UserController {
           .json({ message: "This email is already regisered" });
       }
       const hashedPassword = await bcrypt.hash(password, 10);
+      const id = new mongoose.Types.ObjectId();
+      const resendEmailToken = encode({ _id: id });
       const user = new User({
         firstName,
         lastName,
         email,
         password: hashedPassword,
+        currentToken: resendEmailToken,
       });
+      user._id = id;
       const newUser = await user.save();
-      const baseUrl = base_url ?? `${req.protocol}://${req.get("host")}`;
+
       const verifyToken = new Token({
-        userId: newUser._id,
+        userId: id,
+        type: "jwt",
         expiresAt: moment().add(30, "m").toDate(),
       });
-      const token = await verifyToken.save();
-      const tkn = encode({ _id: token._id }, "30m", true);
-      const resendEmailToken = encode({ _id: newUser._id });
-      const { password: psw, ...rest } = newUser._doc;
-      console.log(tkn);
+      const savedTkn = await verifyToken.save();
+
+      const tkn = encode({ _id: savedTkn._id }, "30m", true);
+      const baseUrl = base_url ?? `${req.protocol}://${req.get("host")}`;
+
+      const { password: psw, currentToken, ...rest } = newUser._doc;
       //! To do, implement the queuing mechanism to handle sending emails in background
       //! also design an email templete
       emailService(
@@ -83,7 +90,7 @@ export class UserController {
 
   static userProfile = async (req, res) => {
     try {
-      const { password, deleteAt, ...rest } = req.user._doc;
+      const { password, deleteAt, currentToken, ...rest } = req.user._doc;
       return res.status(200).json(rest);
     } catch (error) {
       return res.status(500).json({ error: `Error occured! ${error}` });
@@ -132,10 +139,13 @@ export class UserController {
 
   static userLogin = async (req, res) => {
     try {
-      const token = encode({ _id: req.user._id });
       return res
         .status(200)
-        .json({ LoggedIn: "Success", token, user: req.user });
+        .json({
+          LoggedIn: "Success",
+          token: req.otherInfo.token,
+          user: req.user,
+        });
     } catch (error) {
       return res.status(500).json({ message: `Login Failed! ${error}` });
     }
@@ -143,6 +153,14 @@ export class UserController {
 
   static userLogOut = async (req, res) => {
     try {
+      const { user, otherInfo } = req;
+      user.currentToken = null;
+      const blist = new BlackList({
+        token: otherInfo.token,
+        expAt: new Date(otherInfo.exp * 1000),
+      });
+      await blist.save();
+      user.save();
       return res.status(200).json({ message: "logged Out!" });
     } catch (error) {
       return res.status(500).json({ error: `logout Failed! ${error}` });
@@ -170,13 +188,21 @@ export class UserController {
           registered.verifiedAt = new Date();
           registered.deleteAt = null;
         }
+        if (registered.currentToken) {
+          blackList(registered.currentToken);
+        }
+        const token = encode({ _id: registered._id });
+        registered.currentToken = token;
         await registered.save();
-        const token = encode(registered._id);
-        const { password: psw, ...rest } = registered._doc;
+
+        const { password: psw, currentToken, ...rest } = registered._doc;
         return res
           .status(200)
           .json({ message: "Login success", user: rest, token });
       }
+      const id = new mongoose.Types.ObjectId();
+      const token = encode({ _id: id });
+
       const user = new User({
         firstName: given_name,
         lastName: family_name,
@@ -185,10 +211,11 @@ export class UserController {
         proPic: picture,
         verifiedAt: new Date(),
         deleteAt: null,
+        currentToken: token,
       });
+      user._id = id;
       const newUser = await user.save();
-      const token = encode(newUser._id);
-      const { password: psw, ...rest } = newUser._doc;
+      const { password: psw, currentToken, ...rest } = newUser._doc;
       return res
         .status(200)
         .json({ message: "Login success", user: rest, token });
@@ -199,7 +226,7 @@ export class UserController {
 
   static verifyEmail = async (req, res) => {
     try {
-      const { verifyToken } = req;
+      const { verifyToken, otherInfo } = req;
       const user = await User.findById(verifyToken.userId);
       if (!user)
         return res.redirect(
@@ -212,6 +239,8 @@ export class UserController {
       user.verifiedAt = new Date();
       user.deleteAt = null;
       await user.save();
+      await Token.deleteOne({ _id: verifyToken._id });
+      blackList(otherInfo.token, otherInfo.exp);
       return res.redirect(
         `${frontend_base_url}?verify_success=Email verified successfully!`
       );
@@ -227,13 +256,14 @@ export class UserController {
       if (req.user.verifiedAt)
         return res.status(400).json({ message: "Email already verified!" });
       const baseUrl = base_url ?? `${req.protocol}://${req.get("host")}`;
+      await Token.deleteMany({ userId: req.user._id, type: "jwt" });
       const verifyToken = new Token({
         userId: req.user._id,
         expiresAt: moment().add(30, "m").toDate(),
+        type: "jwt",
       });
       const token = await verifyToken.save();
       const tkn = encode({ _id: token._id }, "30m", true);
-      console.log("Resend token", tkn);
       await emailService(
         req.user.email,
         `Verify Email`,

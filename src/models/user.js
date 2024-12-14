@@ -103,8 +103,7 @@ const userSchema = mongoose.Schema(
     currentToken: {
       type: String,
       required: false,
-    }
-
+    },
   },
   { timestamps: true }
 );

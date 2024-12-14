@@ -4,7 +4,7 @@ const TokenSchema = mongoose.Schema(
   {
     token: {
       type: String,
-      default: String(Date.now()),
+      default: new mongoose.Types.ObjectId().toString(),
       required: true,
       unique: true,
     },
@@ -17,6 +17,11 @@ const TokenSchema = mongoose.Schema(
       required: true,
       expires: 0,
     },
+    type: {
+      type: String,
+      enum: ["otp", "jwt"],
+      required: true,
+    }
   },
   { versionKey: false }
 );

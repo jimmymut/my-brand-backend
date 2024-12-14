@@ -1,15 +1,3 @@
-import "dotenv/config";
-
 export * from "./cloudinary";
 export * from "./oaut2Client"
-export const port = process.env.PORT || 4432;
-export const test_port  = process.env.TEST_PORT || 5541;
-export const node_env  = process.env.NODE_ENV || "development";
-export const dev_db  = process.env.DEV_DB;
-export const remote_db  = process.env.REMOTE_DB;
-export const test_db  = process.env.TEST_DB;
-export const own_email  = process.env.OWN_EMAIL;
-export const google_client_id  = process.env.GOOGLE_CLIENT_ID;
-export const google_client_secret  = process.env.GOOGLE_CLIENT_SECRET;
-export const sender_email  = process.env.SENDER_EMAIL;
-export const email_password  = process.env.SENDER_EMAIL_PASSWORD;
+export * from "./envs"

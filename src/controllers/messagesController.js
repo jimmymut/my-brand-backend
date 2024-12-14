@@ -34,7 +34,8 @@ const contactMe = async (req, res) => {
   await messages
     .save()
     .then(async (result) => {
-      await emailService(
+      //! To do, implement the queuing mechanism to handle sending emails in background
+      emailService(
         own_email,
         `${result.name} sent you a message`,
         `<p>Name: ${result.name}<br/>Email: ${result.email}<br/>Phone Number: ${result.phone}<br/>Message: ${result.message}</p>`
@@ -42,7 +43,7 @@ const contactMe = async (req, res) => {
       return res.status(200).json(result);
     })
     .catch(() => {
-      return res.status(500).json({ Error: "send message failed" });
+      return res.status(500).json({ error: "send message failed" });
     });
 };
 
@@ -64,16 +65,18 @@ const singleMessage = async (req, res) => {
 const deleteMessage = async (req, res) => {
   try {
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-      return res.status(400).send("Invalid id");
+      return res.status(400).json({
+        message: "Invalid id",
+      });;
     }
     const exist = await Message.findById(req.params.id);
     if (!exist) {
       return res.status(404).json({ error: "Message not found!" });
     }
     await Message.findOneAndDelete({ _id: req.params.id });
-    return res.status(204).json("Message deleted");
+    return res.status(204).json({ message: "Message deleted" });
   } catch {
-    return res.status(500).json("Error occured!");
+    return res.status(500).json({ message: "Error occured!" });
   }
 };
 

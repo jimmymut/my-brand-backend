@@ -1,3 +1,4 @@
+import moment from "moment";
 import mongoose from "mongoose";
 
 /**
@@ -73,12 +74,14 @@ const userSchema = mongoose.Schema(
     email: {
       type: String,
       required: true,
+      unique: true
     },
     password: {
       type: String,
     },
     title: {
       type: String,
+      enum: ["user", "admin"],
       default: "user",
     },
     googleId: {
@@ -86,6 +89,20 @@ const userSchema = mongoose.Schema(
     },
     proPic: {
       type: String,
+    },
+    verifiedAt: {
+      type: Date,
+      required: false,
+    },
+    deleteAt: {
+      type: Date,
+      default: moment().add(30, "days").toDate(),
+      required: false,
+      expires: 0,
+    },
+    currentToken: {
+      type: String,
+      required: false,
     },
   },
   { timestamps: true }

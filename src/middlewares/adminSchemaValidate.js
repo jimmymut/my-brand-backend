@@ -9,7 +9,7 @@ const validatedAdminSignUp = async (req, res, next) => {
   });
   if (error) {
     return res.status(400).json({
-      error,
+      message: error.message,
     });
   }
   req.validatedData = value;
@@ -22,7 +22,7 @@ const validatedAdminLogin = async (req, res, next) => {
   });
   if (error) {
     return res.status(400).json({
-      error,
+      message: error.message,
     });
   }
   req.validatedData = value;

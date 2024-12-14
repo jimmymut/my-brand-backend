@@ -7,7 +7,7 @@ const getAllBlogs = async (req, res) => {
       return res.status(200).json(blogs);
     })
     .catch(() => {
-      return res.status(500).json({ Error: "Error occured!" });
+      return res.status(500).json({ error: "Error occured!" });
     });
 };
 
@@ -173,7 +173,7 @@ const addComment = async (req, res) => {
     .then(async (savedCmt) => {
       savedCmt.populate({
         path: "user",
-        select: ["firstName", "lastName"],
+        select: ["firstName", "lastName", "proPic"],
       });
       Blog.findByIdAndUpdate(id, { $push: { comments: newcomment._id } })
         .then(() => {
@@ -276,8 +276,8 @@ const likeBlog = async (req, res) => {
           .then(async () => {
             Like.findOneAndDelete({ _id: like_id })
               .then(async () => {
-                const blgLikes = await Like.countDocuments({ blogId: id });
-                return res.status(200).json({ likes: blgLikes });
+                // const blgLikes = await Like.countDocuments({ blogId: id });
+                return res.status(200).json({ like: liked, message: "Unliked this blog", type: "unlike" });
               })
               .catch((error) => {
                 return res
@@ -293,15 +293,15 @@ const likeBlog = async (req, res) => {
           blogId: id,
           userId: req.user._id,
         });
-        await like.save().then(async () => {
+        await like.save().then(async (saved) => {
           await Blog.updateOne(
             { _id: id },
             { $push: { likes: like._id } },
             { new: true }
           )
             .then(async () => {
-              const blgLikes = await Like.countDocuments({ blogId: id });
-              return res.status(200).json({ likes: blgLikes });
+              // const blgLikes = await Like.countDocuments({ blogId: id });
+              return res.status(200).json({ like: saved, type: "like", message: "Liked this blog" });
             })
             .catch((error) => {
               return res.status(500).json({ error: `Error occured! ${error}` });

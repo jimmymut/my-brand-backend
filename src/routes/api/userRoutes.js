@@ -1,16 +1,11 @@
 import express from "express";
 import {
-  userSignUp,
-  getAllUsers,
-  getNumberNonAdminUsers,
-  getSingleUser,
-  isUser,
-  userProfile,
-  googleAuth,
+  UserController,
 } from "../../controllers/userController.js";
-import { authorized } from "../../middlewares/authenticate.js";
+import { authorized, authorizeVerifyEmail } from "../../middlewares/authenticate.js";
 import { isAdmin } from "../../middlewares/isAdmin.js";
-import { validatedUserSignUp } from "../../middlewares/userSchemaValidate.js";
+import * as userValidation from "../../middlewares/userSchemaValidate.js";
+import { validateGoogle } from "../../middlewares/googleValidator.js";
 
 const userRouter = express.Router();
 
@@ -39,7 +34,7 @@ const userRouter = express.Router();
  *       500:
  *         description: Internal error
  */
-userRouter.get("/", authorized, isAdmin, getAllUsers);
+userRouter.get("/", authorized, isAdmin, UserController.getAllUsers);
 
 /**
  * @swagger
@@ -68,9 +63,9 @@ userRouter.get("/", authorized, isAdmin, getAllUsers);
  *       500:
  *         description: Internal error
  */
-userRouter.get("/users", authorized, isAdmin, getNumberNonAdminUsers);
+userRouter.get("/users", authorized, isAdmin, UserController.getNumberNonAdminUsers);
 
-userRouter.get("/dashboard", authorized, isUser);
+userRouter.get("/dashboard", authorized, UserController.isUser);
 
 /**
  * @swagger
@@ -100,7 +95,7 @@ userRouter.get("/dashboard", authorized, isUser);
  *       500:
  *         description: Internal error
  */
-userRouter.get("/profile", authorized, userProfile);
+userRouter.get("/profile", authorized, UserController.userProfile);
 
 /**
  * @swagger
@@ -128,9 +123,8 @@ userRouter.get("/profile", authorized, userProfile);
  *       500:
  *         description: Internal error
  */
-userRouter.get("/dashboard", authorized, isUser);
+userRouter.get("/dashboard", authorized, UserController.isUser);
 
-userRouter.get("/:id", getSingleUser);
 
 /**
  * @swagger
@@ -156,9 +150,91 @@ userRouter.get("/:id", getSingleUser);
  *         description: Account exist or invalid information
  *       500:
  *         description: Server error
- */
-userRouter.post("/", validatedUserSignUp, userSignUp);
+*/
+userRouter.post("/", userValidation.validatedUserSignUp, UserController.userSignUp);
 
-userRouter.post('/auth/google', googleAuth);
+userRouter.post('/auth/google', validateGoogle, UserController.googleAuth);
+
+/**
+ * @swagger
+ * /users/change-password:
+ *   patch:
+ *     tags:
+ *       - Users
+ *     summary: Change password
+ *     security:
+ *       - jwt: []
+ *     requestBody:
+ *         required: true
+ *         content:
+ *           application/json:
+ *             schema:
+ *                type: object
+ *                properties:
+ *                  old:
+ *                    type: string
+ *                    default: 12345!
+ *                  newPwd:
+ *                    type: string
+ *                    default: 12345!
+ *                required:
+ *                  - old
+ *                  - newPwd
+ *     responses:
+ *       200:
+ *         description: Success
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                      type: string
+ *                      default: Password changed successfully
+ *       400:
+ *         description: Bad request
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbbiden
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Server error
+*/
+userRouter.patch("/change-password", authorized, userValidation.validatedChangePassword, UserController.changePassword);
+
+userRouter.get("/verify-email", authorizeVerifyEmail, UserController.verifyEmail);
+
+/**
+ * @swagger
+ * /users/resend-verification:
+ *   get:
+ *     tags:
+ *       - Users
+ *     summary: Request resend verification email
+ *     security:
+ *       - jwt: []
+ *     responses:
+ *       200:
+ *         description: Success
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                      type: string
+ *                      default: Verification email is successfull sent, check your email
+ *       400:
+ *         description: Bad request
+ *       401:
+ *         description: Not logged
+ *       500:
+ *         description: Server error
+ */
+userRouter.get("/resend-verification", authorized, UserController.resendVerificationEmail);
+
+userRouter.get("/:id", UserController.getSingleUser);
 
 export default userRouter;

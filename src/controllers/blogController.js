@@ -3,10 +3,12 @@ import mongoose from "mongoose";
 import { cloudinary } from "../config";
 const getAllBlogs = async (req, res) => {
   await Blog.find()
+    .populate({ path: "comments", populate: { path: "user", select: "_id email lastName firstName proPic" } })
     .then((blogs) => {
       return res.status(200).json(blogs);
     })
-    .catch(() => {
+    .catch((error) => {
+      console.log(error);
       return res.status(500).json({ error: "Error occured!" });
     });
 };
@@ -15,18 +17,18 @@ const addBlog = async (req, res) => {
   try {
     const { title, description, file } = req.validatedData;
     const uploadedImage = await cloudinary.uploader.upload(file, {
-        folder: "images",
-      });
-      const blogs = new Blog({
-        title,
-        description,
-        file: {
-          public_id: uploadedImage.public_id,
-          url: uploadedImage.secure_url,
-        },
-      });
-      const result = await blogs.save();
-      return res.status(200).json(result);
+      folder: "images",
+    });
+    const blogs = new Blog({
+      title,
+      description,
+      file: {
+        public_id: uploadedImage.public_id,
+        url: uploadedImage.secure_url,
+      },
+    });
+    const result = await blogs.save();
+    return res.status(200).json(result);
   } catch (error) {
     console.log(error);
     return res.status(500).json({ Error: "Something went wrong!" });
@@ -277,7 +279,13 @@ const likeBlog = async (req, res) => {
             Like.findOneAndDelete({ _id: like_id })
               .then(async () => {
                 // const blgLikes = await Like.countDocuments({ blogId: id });
-                return res.status(200).json({ like: liked, message: "Unliked this blog", type: "unlike" });
+                return res
+                  .status(200)
+                  .json({
+                    like: liked,
+                    message: "Unliked this blog",
+                    type: "unlike",
+                  });
               })
               .catch((error) => {
                 return res
@@ -301,7 +309,13 @@ const likeBlog = async (req, res) => {
           )
             .then(async () => {
               // const blgLikes = await Like.countDocuments({ blogId: id });
-              return res.status(200).json({ like: saved, type: "like", message: "Liked this blog" });
+              return res
+                .status(200)
+                .json({
+                  like: saved,
+                  type: "like",
+                  message: "Liked this blog",
+                });
             })
             .catch((error) => {
               return res.status(500).json({ error: `Error occured! ${error}` });

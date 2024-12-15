@@ -6,6 +6,7 @@ import { authorized, authorizeVerifyEmail } from "../../middlewares/authenticate
 import { isAdmin } from "../../middlewares/isAdmin.js";
 import * as userValidation from "../../middlewares/userSchemaValidate.js";
 import { validateGoogle } from "../../middlewares/googleValidator.js";
+import { limitThreeRequestsInOneHour } from "../../middlewares/rateLimiter.js";
 
 const userRouter = express.Router();
 
@@ -230,10 +231,12 @@ userRouter.get("/verify-email", authorizeVerifyEmail, UserController.verifyEmail
  *         description: Bad request
  *       401:
  *         description: Not logged
+ *       429:
+ *         description: Manay requests
  *       500:
  *         description: Server error
  */
-userRouter.get("/resend-verification", authorized, UserController.resendVerificationEmail);
+userRouter.get("/resend-verification", limitThreeRequestsInOneHour, authorized, UserController.resendVerificationEmail);
 
 userRouter.get("/:id", UserController.getSingleUser);
 

@@ -1,49 +1,14 @@
 import express from "express";
 import {
-  adminSignUp,
   checkIsAdmin,
-  deleteUserAccount,
   getAllAdmins,
   getAllAppUsers,
   getNumberAdmins,
   getNumberAllAppUsers,
 } from "../../controllers/adminController.js";
-import { validatedUserSignUp } from "../../middlewares/userSchemaValidate.js";
 
 const adminRouter = express.Router();
 
-/**
- * @swagger
- * /admins:
- *   post:
- *     tags:
- *       - Admins
- *     summary: Create an admin account
- *     security:
- *       - jwt: []
- *     requestBody:
- *         required: true
- *         content:
- *           application/json:
- *             schema:
- *                 $ref: '#/components/schemas/UserSignUp'
- *     responses:
- *       200:
- *         description: Success
- *         content:
- *           application/json:
- *             schema:
- *                 $ref: '#/components/schemas/UserResponse'
- *       400:
- *         description: Account exist or invalid information provided
- *       401:
- *         description: Should be loggedin
- *       403:
- *         description: Should be an admin to create a new admin account
- *       500:
- *         description: Internal error
- */
-adminRouter.post("/", validatedUserSignUp, adminSignUp);
 
 /**
  * @swagger
@@ -159,39 +124,5 @@ adminRouter.get("/users", getAllAppUsers);
  */
 adminRouter.get("/users/users", getNumberAllAppUsers);
 
-/**
- * @swagger
- * /admins/{id}:
- *   delete:
- *     tags:
- *       - Admins
- *     summary: Deleting any user account
- *     security:
- *       - jwt: []
- *     parameters:
- *       - name: id
- *         in: path
- *         description: The id of a specific user account
- *         required: true
- *     responses:
- *       200:
- *         description: Success
- *         content:
- *           application/json:
- *             schema:
- *                 type: string
- *                 default: Account deleted
- *       400:
- *         description: Invalid mongoose id
- *       401:
- *         description: Should be loggedin
- *       403:
- *         description: Should be an admin to delete a user account
- *       404:
- *         description: Account not found
- *       500:
- *         description: Internal error
- */
-adminRouter.delete("/:id", deleteUserAccount);
 
 export default adminRouter;

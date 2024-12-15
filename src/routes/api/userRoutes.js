@@ -42,7 +42,7 @@ userRouter.get("/", authorized, isAdmin, UserController.getAllUsers);
  * /users/users:
  *   get:
  *     tags:
- *       - Users
+ *       - Admins
  *     summary: Get the number of non admin users
  *     security:
  *       - jwt: []
@@ -239,5 +239,51 @@ userRouter.get("/verify-email", authorizeVerifyEmail, UserController.verifyEmail
 userRouter.get("/resend-verification", limitThreeRequestsInOneHour, authorized, UserController.resendVerificationEmail);
 
 userRouter.get("/:id", UserController.getSingleUser);
+
+/**
+ * @swagger
+ * /users/{id}:
+ *   patch:
+ *     tags:
+ *       - Admins
+ *     summary: Change user role/title
+ *     security:
+ *       - jwt: []
+ *     requestBody:
+ *         required: true
+ *         content:
+ *           application/json:
+ *             schema:
+ *                type: object
+ *                properties:
+ *                  title:
+ *                    type: enum
+ *                    enum: ["admin","user"]
+ *                    default: admin
+ *                required:
+ *                  - title
+ *     responses:
+ *       200:
+ *         description: Success
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                      type: string
+ *                      default: User role changed successfully
+ *       400:
+ *         description: Bad request
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbbiden
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Server error
+*/
+userRouter.patch("/:id", authorized, isAdmin, userValidation.validatedChangeRole, UserController.changeRole);
 
 export default userRouter;

@@ -19,3 +19,7 @@ export const loginSchema = Joi.object()
     old: Joi.string().min(5).max(30).required().strict(),
     newPwd: Joi.string().min(5).max(30).required().strict(),
   });
+
+  export const RoleSchema = Joi.object({
+    title: Joi.string().valid(["user", "admin"]).required().strict(),
+  });

@@ -2,8 +2,7 @@ import User from "../models/user.js";
 
 const isNotAdmin = async (req, res, next) => {
   try {
-    const admin = await User.findOne({ _id: req.user._id, title: "admin" });
-    if (admin) {
+    if (req.user.title === "admin") {
       return res
         .status(403)
         .json({ message: "Admins are not allowed to like an article" });
@@ -15,8 +14,7 @@ const isNotAdmin = async (req, res, next) => {
 };
 const isAdmin = async (req, res, next) => {
   try {
-    const admin = await User.findOne({ _id: req.user._id, title: "admin" });
-    if (!admin) {
+    if ((req.user.title !== "admin")) {
       return res.status(403).json({ message: "Admins only are allowed" });
     }
     next();

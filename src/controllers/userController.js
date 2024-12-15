@@ -139,13 +139,11 @@ export class UserController {
 
   static userLogin = async (req, res) => {
     try {
-      return res
-        .status(200)
-        .json({
-          LoggedIn: "Success",
-          token: req.otherInfo.token,
-          user: req.user,
-        });
+      return res.status(200).json({
+        LoggedIn: "Success",
+        token: req.otherInfo.token,
+        user: req.user,
+      });
     } catch (error) {
       return res.status(500).json({ message: `Login Failed! ${error}` });
     }
@@ -274,6 +272,35 @@ export class UserController {
       });
     } catch (error) {
       return res.status(500).json({ error: error?.message ?? error });
+    }
+  };
+
+  static changeRole = async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { title } = req.body;
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({
+          message: "Invalid id",
+        });
+      }
+      if (new mongoose.Types.ObjectId(id) === req.user._id) {
+        return res.status(403).json({
+          message: "You can not change your own role!",
+        });
+      }
+      const user = await User.findByIdAndUpdate(id, { $set: { title } });
+      if (!user) {
+        return res.status(403).json({
+          message: "User not found!",
+        });
+      }
+      return res.status(200).json({
+        message: "User role is successfull changed.",
+      });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ message: `Error occured! ${error}` });
     }
   };
 }

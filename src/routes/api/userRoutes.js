@@ -2,7 +2,7 @@ import express from "express";
 import {
   UserController,
 } from "../../controllers/userController.js";
-import { authorized, authorizeVerifyEmail } from "../../middlewares/authenticate.js";
+import { authorized, authorizeOtp, authorizeVerifyEmail } from "../../middlewares/authenticate.js";
 import { isAdmin } from "../../middlewares/isAdmin.js";
 import * as userValidation from "../../middlewares/userSchemaValidate.js";
 import { validateGoogle } from "../../middlewares/googleValidator.js";
@@ -203,7 +203,7 @@ userRouter.post('/auth/google', validateGoogle, UserController.googleAuth);
  *       500:
  *         description: Server error
 */
-userRouter.patch("/change-password", authorized, userValidation.validatedChangePassword, UserController.changePassword);
+userRouter.patch("/change-password", limitThreeRequestsInOneHour, authorized, userValidation.validatedChangePassword, UserController.changePassword);
 
 userRouter.get("/verify-email", authorizeVerifyEmail, UserController.verifyEmail);
 
@@ -238,7 +238,97 @@ userRouter.get("/verify-email", authorizeVerifyEmail, UserController.verifyEmail
  */
 userRouter.get("/resend-verification", limitThreeRequestsInOneHour, authorized, UserController.resendVerificationEmail);
 
+/**
+ * @swagger
+ * /users/request-otp:
+ *   post:
+ *     tags:
+ *       - Users
+ *     summary: Request reset password otp
+  *     requestBody:
+ *         required: true
+ *         content:
+ *           application/json:
+ *             schema:
+ *                type: object
+ *                properties:
+ *                  email:
+ *                    type: string
+ *                    default: mutabazijimmy9@gmail.com
+ *                required:
+ *                  - email
+ *     responses:
+ *       200:
+ *         description: Success
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                      type: string
+ *                      default: Verification email is successfull sent, check your email
+ *       400:
+ *         description: Bad request
+ *       401:
+ *         description: Not logged
+ *       429:
+ *         description: Manay requests
+ *       500:
+ *         description: Server error
+ */
+userRouter.post("/request-otp", limitThreeRequestsInOneHour, userValidation.validateRequestPassOtp, UserController.requestPasswordOtp);
+
 userRouter.get("/:id", UserController.getSingleUser);
+
+/**
+ * @swagger
+ * /users/reset-password:
+ *   patch:
+ *     tags:
+ *       - Users
+ *     summary: Change user role/title
+ *     security:
+ *       - jwt: []
+ *     requestBody:
+ *         required: true
+ *         content:
+ *           application/json:
+ *             schema:
+ *                type: object
+ *                properties:
+ *                  otp:
+ *                    type: string
+ *                    default: 123456
+ *                  password:
+ *                    type: string
+ *                    default: password
+ *                required:
+ *                  - otp
+ *                  - password
+ *     responses:
+ *       200:
+ *         description: Success
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                      type: string
+ *                      default: Password is successifull changed
+ *       400:
+ *         description: Bad request
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbbiden
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Server error
+*/
+userRouter.patch("/reset-password", authorizeOtp, userValidation.validateResetPassword, UserController.resetPassword);
 
 /**
  * @swagger

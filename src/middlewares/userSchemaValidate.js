@@ -51,3 +51,29 @@ export const validatedChangeRole = async (req, res, next) => {
   req.body = value;
   next();
 };
+
+export const validateRequestPassOtp = async (req, res, next) => {
+  const { error, value } = UserSchemas.requestOtpSchema.validate(req.body, {
+    abortEarly: false,
+  });
+  if (error) {
+    return res.status(400).json({
+      message: error.message,
+    });
+  }
+  req.body = value;
+  next();
+};
+
+export const validateResetPassword = async (req, res, next) => {
+  const { error, value } = UserSchemas.resetPasswordSchema.validate(req.body, {
+    abortEarly: false,
+  });
+  if (error) {
+    return res.status(400).json({
+      message: error.message,
+    });
+  }
+  req.body = value;
+  next();
+};

@@ -20,7 +20,7 @@ export const emailService = async (
   });
 
   const mailOptions = {
-    from: `"Jimmy's Website" ${sender_email}`,
+    from: `"JimFolio" ${sender_email}`,
     to,
     subject,
     html: htmlTemplate,

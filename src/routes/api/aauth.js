@@ -8,6 +8,29 @@ const loginout = express.Router();
 
 /**
  * @swagger
+ * /:
+ *   get:
+ *     tags:
+ *       - Health
+ *     summary: Check if the api is working
+ *     responses:
+ *       200:
+ *         description: Success
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                  message:
+ *                      type: string
+ *                      default: Welcome to api
+ *       500:
+ *         description: Internal error
+ */
+loginout.get("/", (req, res)=> res.status(200).json({message: "Welcome to api"}));
+
+/**
+ * @swagger
  * /auth/login:
  *   post:
  *     tags:

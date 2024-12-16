@@ -37,13 +37,15 @@ export const authorizeVerifyEmail = (req, res, next) => {
       if (!user) {
         if (info)
           return res.redirect(
-            `${frontend_base_url}?verify_error=${info.message}`
-          );
-        return res.redirect(`${frontend_base_url}?verify_error=Unauthorized`);
-      }
-      req.verifyToken = user.token;
-      req.otherInfo = user.payload;
-      return next();
+        `${frontend_base_url}?verify_error=${info.message}`
+      );
+      return res.redirect(`${frontend_base_url}?verify_error=Unauthorized`);
     }
-  )(req, res, next);
+    req.verifyToken = user.token;
+    req.otherInfo = user.payload;
+    return next();
+  }
+)(req, res, next);
 };
+
+export const authorizeOtp = (req, res, next) => auth("otp-jwt", req, res, next);

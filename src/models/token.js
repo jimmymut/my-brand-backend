@@ -11,6 +11,7 @@ const TokenSchema = mongoose.Schema(
     userId: {
         type: mongoose.Schema.Types.ObjectId,
         required: true,
+        ref: "User",
     },
     expiresAt: {
       type: Date,

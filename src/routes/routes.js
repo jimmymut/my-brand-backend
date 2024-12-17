@@ -3,7 +3,7 @@ import blogRouter from "./api/blogRouts.js";
 import msgRouter from "./api/messageRoutes.js";
 import adminRouter from "./api/adminRoutes.js";
 import userRouter from "./api/userRoutes.js";
-import loginout from "./api/logInOut.js";
+import loginout from "./api/aauth.js";
 import { notFound } from "../controllers/userController.js";
 import swaggerUi from "swagger-ui-express";
 import specs from "../utils/swaggerConfig.js";

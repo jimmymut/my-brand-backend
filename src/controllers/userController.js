@@ -7,12 +7,14 @@ import {
   google_client_id,
   base_url,
   frontend_base_url,
+  salt_round,
 } from "../config";
 import { emailService } from "../utils/EmailService.js";
 import Token from "../models/token.js";
 import moment from "moment";
 import BlackList from "../models/blackList.js";
 import blackList from "../utils/blacklist.js";
+import otpGenerator from "otp-generator";
 
 export class UserController {
   static async userSignUp(req, res) {
@@ -24,7 +26,7 @@ export class UserController {
           .status(400)
           .json({ message: "This email is already regisered" });
       }
-      const hashedPassword = await bcrypt.hash(password, 10);
+      const hashedPassword = await bcrypt.hash(password, salt_round);
       const id = new mongoose.Types.ObjectId();
       const resendEmailToken = encode({ _id: id });
       const user = new User({
@@ -53,7 +55,7 @@ export class UserController {
       emailService(
         email,
         `Verify Email`,
-        `<p>Hi ${firstName},</p><br/><br/><p>Thank you for registering to our platform.</p><p>please click to the <a style="color:blue; text-decoration:underline" href="${baseUrl}/users/verify-email?tkn=${tkn}">this link</a> in order to verify your email and be able to access the features, if the email is not verified, your account will be deleted after 30 days.</p><p>The link will expire in 30 minutes, if the link expires, you can request to <a style="color:blue; text-decoration:underline" href="${frontend_base_url}?exp_email=true">another link</a> if 30 days are not yet passed from the signup time, otherwise you'll be required to register again!</p><br/><br/><p>Best regards,</p><p>Jimmy's website</p>`
+        `<p>Hi ${firstName},</p><br/><br/><p>Thank you for registering to our platform.</p><p>please click to the <a style="color:blue; text-decoration:underline" href="${baseUrl}/users/verify-email?tkn=${tkn}">this link</a> in order to verify your email and be able to access the features, if the email is not verified, your account will be deleted after 30 days.</p><p>The link will expire in 30 minutes, if the link expires, you can request to <a style="color:blue; text-decoration:underline" href="${frontend_base_url}?exp_email=true">another link</a> if 30 days are not yet passed from the signup time, otherwise you'll be required to register again!</p><br/><br/><p>Best regards,</p><p>JimFolio</p>`
       );
       return res.status(200).json({ token: resendEmailToken, user: rest });
     } catch (error) {
@@ -114,24 +116,34 @@ export class UserController {
   static changePassword = async (req, res) => {
     try {
       const { old, newPwd } = req.body;
-      const { _id, password } = req.user;
-      if (!bcrypt.compareSync(old, password)) {
+      const { _id, password, firstName, email, currentToken } = req.user;
+      const isOldPasswordCorrect = await bcrypt.compare(old, password);
+      if (!isOldPasswordCorrect) {
         //! To do
         // I have to count for the wrong password attempts to a max of 3,
         // then I lock this account for a certain period! to increase the security.
         return res.status(401).json({ message: "Incorrect password" });
       }
 
-      if (bcrypt.compareSync(newPwd, password)) {
+      const isNewPasswordSameAsCurrent = await bcrypt.compare(newPwd, password);
+      if (isNewPasswordSameAsCurrent) {
         return res.status(403).json({
           message: "New password should be the same as current password",
         });
       }
-      const newPassword = bcrypt.hashSync(newPwd, 10);
-      await User.updateOne({ _id }, { $set: { password: newPassword } });
+      const newPassword = await bcrypt.hash(newPwd, salt_round);
+      await User.updateOne({ _id }, { $set: { password: newPassword, currentToken: null } });
+      if(currentToken){
+        blackList(currentToken);
+      }
+      await emailService(
+        email,
+        `Password changed`,
+        `<p>Hi ${firstName},</p><br/><br/><p>I hope this email finds well, this is to let you know that your password has been changed. If is you who changed it, your account is safe but you will need to login again with the new password otherwise you need to make immadiate action by changing it using <a style="color:blue; text-decoration:underline" href="${frontend_base_url}?forgot=true">forgot password link</a>.</p><br/><br/><p>Best regards,</p><p>JimFolio</p>`
+      );
       return res
         .status(200)
-        .json({ message: "Password changed successfully!" });
+        .json({ message: "Password changed successfully, you need to login again with your new password to if you need to regain full access." });
     } catch (error) {
       return res.status(500).json({ message: `Error occurred! ${error}` });
     }
@@ -139,13 +151,11 @@ export class UserController {
 
   static userLogin = async (req, res) => {
     try {
-      return res
-        .status(200)
-        .json({
-          LoggedIn: "Success",
-          token: req.otherInfo.token,
-          user: req.user,
-        });
+      return res.status(200).json({
+        LoggedIn: "Success",
+        token: req.otherInfo.token,
+        user: req.user,
+      });
     } catch (error) {
       return res.status(500).json({ message: `Login Failed! ${error}` });
     }
@@ -155,11 +165,7 @@ export class UserController {
     try {
       const { user, otherInfo } = req;
       user.currentToken = null;
-      const blist = new BlackList({
-        token: otherInfo.token,
-        expAt: new Date(otherInfo.exp * 1000),
-      });
-      await blist.save();
+      await blackList(otherInfo.token, otherInfo.exp);
       user.save();
       return res.status(200).json({ message: "logged Out!" });
     } catch (error) {
@@ -267,12 +273,126 @@ export class UserController {
       await emailService(
         req.user.email,
         `Verify Email`,
-        `<p>Hi ${req.user.firstName},</p><br/><br/><p>Thank you for registering to our platform.</p><p>please click to the <a style="color:blue; text-decoration:underline" href="${baseUrl}/users/verify-email?tkn=${tkn}">this link</a> in order to verify your email and be able to access the features, if the email is not verified, your account will be deleted after 30 days.</p><p>The link will expire in 30 minutes, if the link expires, you can request to <a style="color:blue; text-decoration:underline" href="${frontend_base_url}?exp_email=true">another link</a> if 30 days are not yet passed from the signup time, otherwise you'll be required to register again!</p><br/><br/><p>Best regards,</p><p>Jimmy's website</p>`
+        `<p>Hi ${req.user.firstName},</p><br/><br/><p>Thank you for registering to our platform.</p><p>please click to the <a style="color:blue; text-decoration:underline" href="${baseUrl}/users/verify-email?tkn=${tkn}">this link</a> in order to verify your email and be able to access the features, if the email is not verified, your account will be deleted after 30 days.</p><p>The link will expire in 30 minutes, if the link expires, you can request to <a style="color:blue; text-decoration:underline" href="${frontend_base_url}?exp_email=true">another link</a> if 30 days are not yet passed from the signup time, otherwise you'll be required to register again!</p><br/><br/><p>Best regards,</p><p>JimFolio</p>`
       );
       return res.status(200).json({
         message: "Verification email is sent, please check your emails",
       });
     } catch (error) {
+      return res.status(500).json({ error: error?.message ?? error });
+    }
+  };
+
+  static changeRole = async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { title } = req.body;
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({
+          message: "Invalid id",
+        });
+      }
+      if (new mongoose.Types.ObjectId(id) === req.user._id) {
+        return res.status(403).json({
+          message: "You can not change your own role!",
+        });
+      }
+      const user = await User.findById(id);
+      if (!user) {
+        return res.status(404).json({
+          message: "User not found!",
+        });
+      }
+      if (user.title === "admin" && title === "user") {
+        const numAdmins = await User.countDocuments({ title: "admin" });
+        if (numAdmins <= 1)
+          return res.status(403).json({
+            message:
+              "Sorry, there is only one admin, there should always be at least one admin.",
+          });
+      }
+      user.title = title;
+      await user.save();
+      return res.status(200).json({
+        message: "User role is successfully changed.",
+      });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ message: `Error occured! ${error}` });
+    }
+  };
+
+  static resetPassword = async (req, res) => {
+    try {
+      const { otp, password } = req.body;
+      const token = req.user;
+
+      const isOtpCorrect = await bcrypt.compare(otp, token.token);
+      if (!isOtpCorrect)
+        return res.status(400).json({ message: "Invalid OTP" });
+
+      const user = token.userId;
+      if (!user) {
+        return res.status(404).json({
+          message: "Account not found!",
+        });
+      }
+      const new_pass = await bcrypt.hash(password, salt_round);
+      user.password = new_pass;
+      await user.save();
+      if(user.currentToken){
+        await blackList(user.currentToken);
+      }
+      blackList(req.otherInfo.token, req.otherInfo.exp),
+      await Token.deleteOne({_id: token._id});
+      emailService(
+        user.email,
+        `Password changed`,
+        `<p>Hi ${user.firstName},</p><br/><br/><p>I hope this email finds well, this is to let you know that your password has been changed. If is you who changed it, your account is safe but you will need to login again with the new password otherwise you need to make immadiate action by changing it using <a style="color:blue; text-decoration:underline" href="${frontend_base_url}?forgot=true">forgot password link</a>.</p><br/><br/><p>Best regards,</p><p>JimFolio</p>`
+      );
+      return res.status(200).json({
+        message: "Password is successfully updated",
+      });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ message: `Error occured! ${error}` });
+    }
+  };
+
+  static requestPasswordOtp = async (req, res) => {
+    try {
+      const { email } = req.body;
+      const user = await User.findOne({ email });
+      const message = "OTP has been sent to the email";
+      if (!user) return res.status(200).json({ message });
+      await Token.deleteMany({ userId: user._id, type: "otp" });
+      const otp = otpGenerator.generate(6, {
+        digits: true,
+        lowerCaseAlphabets: false,
+        upperCaseAlphabets: false,
+        specialChars: false,
+      });
+      const hashedOtp = await bcrypt.hash(otp, salt_round);
+      const verifyToken = new Token({
+        userId: user._id,
+        token: hashedOtp,
+        expiresAt: moment().add(5, "m").toDate(),
+        type: "otp",
+      });
+      const token = await verifyToken.save();
+      const tkn = encode({ _id: token._id }, "5m", true);
+
+      await emailService(
+        email,
+        `Forgot Password Request`,
+        `<p>Hi,</p><br/><br/><p>There is a request to reset your password, if is you who made the request, use this OTP <b>${otp}</b> to reset the password with the new one, if your not the one who made the request, just ignore this email.</p><p>This OTP will expire in 5 minutes.</p><br/><br/><p>Best regards,</p><p>JimFolio</p>`
+      );
+      return res.status(200).json({
+        message,
+        token: tkn,
+      });
+    } catch (error) {
+      console.error(error);
       return res.status(500).json({ error: error?.message ?? error });
     }
   };

@@ -100,3 +100,35 @@ passport.use(
     }
   )
 );
+
+passport.use(
+  "otp-jwt",
+  new JwtStrategy(
+    {
+      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      secretOrKey: jwt_verify_secret_key,
+      passReqToCallback: true,
+    },
+    async (req, jwtPayload, done) => {
+      try {
+        const getToken = ExtractJwt.fromAuthHeaderAsBearerToken();
+        const token = getToken(req);
+        const blacklist = await BlackList.findOne({ token });
+        if (blacklist) return done(null, false, { message: "Otp expired" });
+        const otp = await Token.findById(jwtPayload._id).populate("userId");
+        if (!otp) {
+          return done(null, false, {
+            message: "Otp not found or expired",
+          });
+        }
+        return done(null, {
+          user: otp,
+          payload: { token, exp: jwtPayload.exp },
+        });
+      } catch (error) {
+        console.log(error);
+        return done({ message: "Server Error!" }, false);
+      }
+    }
+  )
+);

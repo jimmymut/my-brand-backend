@@ -16,3 +16,4 @@ export const frontend_base_url = process.env.FRONTEND_BASE_URL;
 export const jwt_expiry_time = process.env.JWT_EXPIRATION_TIME;
 export const jwt_secret_key = process.env.SECRET_KEY;
 export const jwt_verify_secret_key = process.env.VERIFY_SECRET_KEY;
+export const salt_round = parseInt(process.env.SALT_ROUND??"8");

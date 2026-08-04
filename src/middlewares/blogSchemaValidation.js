@@ -5,13 +5,25 @@ import {
 } from "../validations/blogValidations.js";
 import mongoose from "mongoose";
 
+// Over multipart/form-data the `body` paragraph array arrives as a JSON string;
+// parse it back into an array before validation.
+const parseBody = (val) => {
+  if (typeof val !== "string") return val;
+  try {
+    const parsed = JSON.parse(val);
+    return Array.isArray(parsed) ? parsed : val;
+  } catch {
+    return val;
+  }
+};
+
 const validatedAddBlog = async (req, res, next) => {
   const data = {
     title: req.body.title,
     description: req.body.description,
     excerpt: req.body.excerpt,
     tag: req.body.tag,
-    body: req.body.body,
+    body: parseBody(req.body.body),
     date: req.body.date,
     file: req.file ? req.file.path : req.body.file,
   };
@@ -29,6 +41,7 @@ const validatedAddBlog = async (req, res, next) => {
 
 const validatedUpdateBlog = async (req, res, next) => {
   const id = req.params.id;
+  if (req.body.body !== undefined) req.body.body = parseBody(req.body.body);
   const { error, value } = validateUpdateBlogSchema.validate(req.body, {
     abortEarly: false,
   });

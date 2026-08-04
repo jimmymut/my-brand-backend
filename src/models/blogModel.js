@@ -101,16 +101,27 @@ const blogSchema = new Schema(
     },
     description: {
       type: String,
-      required: true,
+    },
+    excerpt: {
+      type: String,
+    },
+    tag: {
+      type: String,
+      default: "Other",
+    },
+    body: {
+      type: [String],
+      default: [],
+    },
+    date: {
+      type: String,
     },
     file: {
       public_id: {
         type: String,
-        required: true,
       },
       url: {
         type: String,
-        required: true,
       },
     },
     likes: {

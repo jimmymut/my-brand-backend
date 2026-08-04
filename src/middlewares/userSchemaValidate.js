@@ -77,3 +77,16 @@ export const validateResetPassword = async (req, res, next) => {
   req.body = value;
   next();
 };
+
+export const validateVerifyOtp = async (req, res, next) => {
+  const { error, value } = UserSchemas.verifyOtpSchema.validate(req.body, {
+    abortEarly: false,
+  });
+  if (error) {
+    return res.status(400).json({
+      message: error.message,
+    });
+  }
+  req.body = value;
+  next();
+};

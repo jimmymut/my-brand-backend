@@ -2,7 +2,7 @@ import Work from "../models/work";
 
 export const createWork = async (req, res) => {
   try {
-    const { title, body } = req.body;
+    const { title, body, desc, start, end, link } = req.body;
     const existWork = await Work.findOne({ title });
     if (existWork) {
       return res
@@ -12,6 +12,10 @@ export const createWork = async (req, res) => {
     const work = new Work({
       title,
       body,
+      desc,
+      start,
+      end,
+      link,
     });
     const newWork = await work.save();
     return res.status(201).json({newWork});
@@ -32,15 +36,27 @@ export const getAllWorks = async (req, res) => {
 export const updateWork = async (req, res) => {
   try {
     const id = req.params.id;
-    const existWork = await Blog.findOne({ _id: id });
+    const existWork = await Work.findOne({ _id: id });
     if (!existWork) {
       return res.status(404).json({ error: "Work doesn't exist!" });
     }
     if (req.body.title) {
       existWork.title = req.body.title;
     }
-    if (req.body.body) {
+    if (req.body.body !== undefined) {
       existWork.body = req.body.body;
+    }
+    if (req.body.desc !== undefined) {
+      existWork.desc = req.body.desc;
+    }
+    if (req.body.start !== undefined) {
+      existWork.start = req.body.start;
+    }
+    if (req.body.end !== undefined) {
+      existWork.end = req.body.end;
+    }
+    if (req.body.link !== undefined) {
+      existWork.link = req.body.link;
     }
     const updatedWork = await existWork.save();
     return res.status(200).json({ updatedWork });

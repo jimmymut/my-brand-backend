@@ -57,7 +57,21 @@ const workSchema = mongoose.Schema(
     },
     body: {
       type: String,
-      required: true,
+    },
+    desc: {
+      type: String,
+    },
+    start: {
+      type: String,
+      default: "",
+    },
+    end: {
+      type: String,
+      default: "",
+    },
+    link: {
+      type: String,
+      default: "",
     },
   },
   { timestamps: true }

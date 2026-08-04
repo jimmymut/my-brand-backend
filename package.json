@@ -3,12 +3,16 @@
   "version": "1.0.0",
   "description": "This repo is for backend of my-brand",
   "main": "./src/index.js",
+  "engines": {
+    "node": ">=18.18.0"
+  },
   "scripts": {
     "build": "babel src -d dist",
     "dev": "better-npm-run dev",
     "test": "jest --collect-coverage",
-    "start": "babel-node ./src/index.js",
-    "seed:savings": "babel-node ./src/scripts/seedSavings.js"
+    "start": "node dist/index.js",
+    "seed:savings": "babel-node ./src/scripts/seedSavings.js",
+    "postinstall": "npm run build"
   },
   "betterScripts": {
     "dev": {

@@ -17,6 +17,25 @@ import blackList from "../utils/blacklist.js";
 import otpGenerator from "otp-generator";
 
 export class UserController {
+  // Issue a fresh 6-digit email-verification OTP for a user (30 min lifetime).
+  static async createVerificationOtp(userId) {
+    await Token.deleteMany({ userId, type: "otp" });
+    const otp = otpGenerator.generate(6, {
+      digits: true,
+      lowerCaseAlphabets: false,
+      upperCaseAlphabets: false,
+      specialChars: false,
+    });
+    const hashedOtp = await bcrypt.hash(otp, salt_round);
+    await new Token({
+      userId,
+      token: hashedOtp,
+      type: "otp",
+      expiresAt: moment().add(30, "m").toDate(),
+    }).save();
+    return otp;
+  }
+
   static async userSignUp(req, res) {
     try {
       const { firstName, lastName, email, password } = req.body;
@@ -49,13 +68,16 @@ export class UserController {
       const tkn = encode({ _id: savedTkn._id }, "30m", true);
       const baseUrl = base_url ?? `${req.protocol}://${req.get("host")}`;
 
+      // Also issue a 6-digit code so the SPA can verify inline (POST /users/verify-otp).
+      const otp = await UserController.createVerificationOtp(id);
+
       const { password: psw, currentToken, ...rest } = newUser._doc;
       //! To do, implement the queuing mechanism to handle sending emails in background
       //! also design an email templete
       emailService(
         email,
         `Verify Email`,
-        `<p>Hi ${firstName},</p><br/><br/><p>Thank you for registering to our platform.</p><p>please click to the <a style="color:blue; text-decoration:underline" href="${baseUrl}/users/verify-email?tkn=${tkn}">this link</a> in order to verify your email and be able to access the features, if the email is not verified, your account will be deleted after 30 days.</p><p>The link will expire in 30 minutes, if the link expires, you can request to <a style="color:blue; text-decoration:underline" href="${frontend_base_url}?exp_email=true">another link</a> if 30 days are not yet passed from the signup time, otherwise you'll be required to register again!</p><br/><br/><p>Best regards,</p><p>JimFolio</p>`
+        `<p>Hi ${firstName},</p><br/><br/><p>Thank you for registering to our platform.</p><p>Use this 6-digit code to verify your email: <b style="font-size:18px;letter-spacing:2px">${otp}</b> (valid for 30 minutes).</p><p>Alternatively, click <a style="color:blue; text-decoration:underline" href="${baseUrl}/users/verify-email?tkn=${tkn}">this link</a> to verify. If the email is not verified, your account will be deleted after 30 days. If the link expires, you can request <a style="color:blue; text-decoration:underline" href="${frontend_base_url}?exp_email=true">another link</a>.</p><br/><br/><p>Best regards,</p><p>JimFolio</p>`
       );
       return res.status(200).json({ token: resendEmailToken, user: rest });
     } catch (error) {
@@ -270,14 +292,51 @@ export class UserController {
       });
       const token = await verifyToken.save();
       const tkn = encode({ _id: token._id }, "30m", true);
+      // Re-issue the inline 6-digit code alongside the link.
+      const otp = await UserController.createVerificationOtp(req.user._id);
       await emailService(
         req.user.email,
         `Verify Email`,
-        `<p>Hi ${req.user.firstName},</p><br/><br/><p>Thank you for registering to our platform.</p><p>please click to the <a style="color:blue; text-decoration:underline" href="${baseUrl}/users/verify-email?tkn=${tkn}">this link</a> in order to verify your email and be able to access the features, if the email is not verified, your account will be deleted after 30 days.</p><p>The link will expire in 30 minutes, if the link expires, you can request to <a style="color:blue; text-decoration:underline" href="${frontend_base_url}?exp_email=true">another link</a> if 30 days are not yet passed from the signup time, otherwise you'll be required to register again!</p><br/><br/><p>Best regards,</p><p>JimFolio</p>`
+        `<p>Hi ${req.user.firstName},</p><br/><br/><p>Use this 6-digit code to verify your email: <b style="font-size:18px;letter-spacing:2px">${otp}</b> (valid for 30 minutes).</p><p>Alternatively, click <a style="color:blue; text-decoration:underline" href="${baseUrl}/users/verify-email?tkn=${tkn}">this link</a>. If the email is not verified, your account will be deleted after 30 days. If the link expires, request <a style="color:blue; text-decoration:underline" href="${frontend_base_url}?exp_email=true">another link</a>.</p><br/><br/><p>Best regards,</p><p>JimFolio</p>`
       );
       return res.status(200).json({
         message: "Verification email is sent, please check your emails",
       });
+    } catch (error) {
+      return res.status(500).json({ error: error?.message ?? error });
+    }
+  };
+
+  // Inline 6-digit registration verification (authenticated by the user's session JWT).
+  static verifyRegistrationOtp = async (req, res) => {
+    try {
+      const user = req.user;
+      const sanitize = () => {
+        const { password, deleteAt, currentToken, ...rest } = user._doc;
+        return rest;
+      };
+      if (user.verifiedAt)
+        return res
+          .status(200)
+          .json({ message: "Email already verified", user: sanitize() });
+      const { otp } = req.body;
+      const token = await Token.findOne({ userId: user._id, type: "otp" });
+      if (!token || !token.token)
+        return res
+          .status(400)
+          .json({ message: "Your code has expired — please resend it." });
+      const ok = await bcrypt.compare(String(otp), token.token);
+      if (!ok)
+        return res
+          .status(400)
+          .json({ message: "Incorrect code — check and try again." });
+      user.verifiedAt = new Date();
+      user.deleteAt = null;
+      await user.save();
+      await Token.deleteMany({ userId: user._id, type: "otp" });
+      return res
+        .status(200)
+        .json({ message: "Email verified successfully", user: sanitize() });
     } catch (error) {
       return res.status(500).json({ error: error?.message ?? error });
     }

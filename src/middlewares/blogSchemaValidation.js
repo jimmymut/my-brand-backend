@@ -9,7 +9,11 @@ const validatedAddBlog = async (req, res, next) => {
   const data = {
     title: req.body.title,
     description: req.body.description,
-    file: req.file.path,
+    excerpt: req.body.excerpt,
+    tag: req.body.tag,
+    body: req.body.body,
+    date: req.body.date,
+    file: req.file ? req.file.path : req.body.file,
   };
   const { error, value } = validateAddBlogSchema.validate(data, {
     abortEarly: false,

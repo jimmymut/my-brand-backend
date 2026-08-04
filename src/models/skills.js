@@ -67,11 +67,20 @@ const skillSchema = mongoose.Schema(
     },
     icon: {
       type: String,
-      required: true,
+      default: "",
     },
     summary: {
       type: String,
-      required: true,
+      default: "",
+    },
+    desc: {
+      type: String,
+    },
+    level: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 100,
     },
   },
   { timestamps: true }

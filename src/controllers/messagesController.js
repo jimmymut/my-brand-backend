@@ -80,10 +80,28 @@ const deleteMessage = async (req, res) => {
   }
 };
 
+const toggleReadMessage = async (req, res) => {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: "Invalid id" });
+    }
+    const exist = await Message.findById(req.params.id);
+    if (!exist) {
+      return res.status(404).json({ error: "Message not found!" });
+    }
+    exist.read = !exist.read;
+    const updated = await exist.save();
+    return res.status(200).json({ message: updated });
+  } catch (error) {
+    return res.status(500).json({ message: "Error occured!" });
+  }
+};
+
 export {
   getAllMessages,
   contactMe,
   singleMessage,
   deleteMessage,
   getNumberMessages,
+  toggleReadMessage,
 };

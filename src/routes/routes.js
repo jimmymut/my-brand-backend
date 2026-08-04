@@ -11,6 +11,7 @@ import { authorized } from "../middlewares/authenticate.js";
 import { isAdmin } from "../middlewares/isAdmin.js";
 import workRouter from "./api/workRoutes.js";
 import skillRouter from "./api/skillsRoutes.js";
+import financeRouter from "./api/financeRoutes.js";
 
 const router = express.Router();
 
@@ -22,6 +23,7 @@ router.use("/users", userRouter);
 router.use("/api/docs", swaggerUi.serve, swaggerUi.setup(specs));
 router.use("/works", workRouter);
 router.use("/skills", skillRouter);
+router.use("/finance", financeRouter);
 
 router.all("*", notFound);
 

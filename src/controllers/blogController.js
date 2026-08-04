@@ -15,17 +15,28 @@ const getAllBlogs = async (req, res) => {
 
 const addBlog = async (req, res) => {
   try {
-    const { title, description, file } = req.validatedData;
-    const uploadedImage = await cloudinary.uploader.upload(file, {
-      folder: "images",
-    });
+    const { title, description, excerpt, tag, body, date, file } =
+      req.validatedData;
+    let fileData = { public_id: "", url: "" };
+    if (req.file) {
+      const uploadedImage = await cloudinary.uploader.upload(req.file.path, {
+        folder: "images",
+      });
+      fileData = {
+        public_id: uploadedImage.public_id,
+        url: uploadedImage.secure_url,
+      };
+    } else if (file) {
+      fileData = { public_id: "", url: file };
+    }
     const blogs = new Blog({
       title,
       description,
-      file: {
-        public_id: uploadedImage.public_id,
-        url: uploadedImage.secure_url,
-      },
+      excerpt,
+      tag,
+      body,
+      date,
+      file: fileData,
     });
     const result = await blogs.save();
     return res.status(200).json(result);
@@ -77,8 +88,20 @@ const updateBlog = async (req, res) => {
       post.title = req.body.title;
     }
 
-    if (req.body.description) {
+    if (req.body.description !== undefined) {
       post.description = req.body.description;
+    }
+    if (req.body.excerpt !== undefined) {
+      post.excerpt = req.body.excerpt;
+    }
+    if (req.body.tag !== undefined) {
+      post.tag = req.body.tag;
+    }
+    if (req.body.body !== undefined) {
+      post.body = req.body.body;
+    }
+    if (req.body.date !== undefined) {
+      post.date = req.body.date;
     }
     if (req.file) {
       const uploadedImage = await cloudinary.uploader.upload(req.file.path, {
@@ -86,13 +109,9 @@ const updateBlog = async (req, res) => {
       });
       post.file.public_id = uploadedImage.public_id;
       post.file.url = uploadedImage.secure_url;
-    }
-    if (req.body.file) {
-      const uploadedImage = await cloudinary.uploader.upload(req.body.file, {
-        folder: "images",
-      });
-      post.file.public_id = uploadedImage.public_id;
-      post.file.url = uploadedImage.secure_url;
+    } else if (req.body.file) {
+      post.file.public_id = "";
+      post.file.url = req.body.file;
     }
 
     const updatedPost = await post.save();

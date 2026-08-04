@@ -238,6 +238,8 @@ userRouter.get("/verify-email", authorizeVerifyEmail, UserController.verifyEmail
  */
 userRouter.get("/resend-verification", limitThreeRequestsInOneHour, authorized, UserController.resendVerificationEmail);
 
+userRouter.post("/verify-otp", authorized, userValidation.validateVerifyOtp, UserController.verifyRegistrationOtp);
+
 /**
  * @swagger
  * /users/request-otp:

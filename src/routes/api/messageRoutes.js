@@ -5,6 +5,7 @@ import {
   singleMessage,
   deleteMessage,
   getNumberMessages,
+  toggleReadMessage,
 } from "../../controllers/messagesController.js";
 import validatedMessage from "../../middlewares/messageSchemaValidator.js";
 import { authorized } from "../../middlewares/authenticate.js";
@@ -163,5 +164,39 @@ msgRouter.get("/:id", authorized, isAdmin, singleMessage);
  *         description: Internal error
  */
 msgRouter.delete("/:id", authorized, isAdmin, deleteMessage);
+
+/**
+ * @swagger
+ * /messages/{id}/read:
+ *   patch:
+ *     tags:
+ *       - Messages
+ *     summary: Toggle the read status of a message
+ *     security:
+ *       - jwt: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         description: The id of a specific message
+ *         required: true
+ *     responses:
+ *       200:
+ *         description: Updated message
+ *         content:
+ *           application/json:
+ *             schema:
+ *                 $ref: '#/components/schemas/MessageResponse'
+ *       400:
+ *         description: Invalid mongoose id
+ *       401:
+ *         description: Should be loggedin
+ *       403:
+ *         description: Should be an admin to update a message
+ *       404:
+ *         description: Message not found
+ *       500:
+ *         description: Internal error
+ */
+msgRouter.patch("/:id/read", authorized, isAdmin, toggleReadMessage);
 
 export default msgRouter;

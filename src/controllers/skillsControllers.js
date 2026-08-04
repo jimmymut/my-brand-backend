@@ -3,18 +3,26 @@ import { cloudinary } from "../config";
 
 export const createSkill = async (req, res) => {
   try {
-    const { name, summary } = req.validatedData;
+    const { name, summary, desc, level } = req.validatedData;
     const existSkill = await Skill.findOne({ name });
     if (existSkill) {
       return res.status(409).json({ message: "This skill already exist!" });
     }
-    const uploadedImage = await cloudinary.uploader.upload(req.file.path, {
-      folder: "skill_icons",
-    });
+    let icon = "";
+    if (req.file) {
+      const uploadedImage = await cloudinary.uploader.upload(req.file.path, {
+        folder: "skill_icons",
+      });
+      icon = uploadedImage.secure_url;
+    } else if (req.body.icon) {
+      icon = req.body.icon;
+    }
     const skill = new Skill({
       name,
-      summary,
-      icon: uploadedImage.secure_url,
+      summary: summary || "",
+      desc,
+      level: level || 0,
+      icon,
     });
     const newSkill = await skill.save();
     return res.status(201).json({ newSkill });
@@ -35,22 +43,30 @@ export const getAllSkills = async (req, res) => {
 export const updateSkill = async (req, res) => {
   try {
     const id = req.params.id;
-    const { name, summary } = req.validatedData;
-    const existSkill = await Blog.findOne({ _id: id });
+    const { name, summary, desc, level } = req.validatedData;
+    const existSkill = await Skill.findOne({ _id: id });
     if (!existSkill) {
       return res.status(404).json({ error: "Skill doesn't exist!" });
     }
     if (name) {
       existSkill.name = name;
     }
-    if (summary) {
+    if (summary !== undefined) {
       existSkill.summary = summary;
+    }
+    if (desc !== undefined) {
+      existSkill.desc = desc;
+    }
+    if (level !== undefined) {
+      existSkill.level = level;
     }
     if (req.file) {
       const uploadedImage = await cloudinary.uploader.upload(req.file.path, {
         folder: "skill_icons",
       });
       existSkill.icon = uploadedImage.secure_url;
+    } else if (req.body.icon !== undefined) {
+      existSkill.icon = req.body.icon;
     }
     const updatedSkill = await existSkill.save();
     return res.status(200).json({ updatedSkill });

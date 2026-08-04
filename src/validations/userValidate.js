@@ -1,11 +1,19 @@
 import Joi from "joi";
 
 export const SignUpSchema = Joi.object({
-  firstName: Joi.string().min(3).required(),
-  lastName: Joi.string().min(3).uppercase().required(),
+  firstName: Joi.string().min(2).required(),
+  lastName: Joi.string().allow("").optional(),
   email: Joi.string().email().required(),
   password: Joi.string().min(5).max(30).required().strict(),
   comfirmPassword: Joi.string().valid(Joi.ref("password")).required().strict(),
+});
+
+export const verifyOtpSchema = Joi.object({
+  otp: Joi.string()
+    .length(6)
+    .pattern(/^[0-9]+/)
+    .required()
+    .messages({ "string.pattern": "The code must be six digits" }),
 });
 
 export const loginSchema = Joi.object()

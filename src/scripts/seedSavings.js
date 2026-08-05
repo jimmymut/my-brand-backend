@@ -54,14 +54,28 @@ async function run() {
   await mongoose.connect(uri, { useNewUrlParser: true, useUnifiedTopology: true });
   console.log("Connected. Seeding savings from", START, "to current month…");
 
+  // --force / --fill re-enables gap-filling any missing month (may resurrect
+  // months you deliberately removed). Default is a ONE-TIME backfill per goal:
+  // if a goal already has any deposit, it is left completely untouched.
+  const force = process.argv.includes("--force") || process.argv.includes("--fill");
+
   const months = monthsFrom(START);
   let created = 0;
-  let skipped = 0;
+  let skippedGoals = 0;
+  let skippedMonths = 0;
 
   for (const p of PLAN) {
+    if (!force) {
+      const touched = await Contribution.findOne({ bucket: p.bucket, kind: "deposit" });
+      if (touched) {
+        skippedGoals += 1;
+        console.log(`Skipping ${p.bucket} — already has deposits (leaving it alone).`);
+        continue;
+      }
+    }
     for (const month of months) {
       const exists = await Contribution.findOne({ bucket: p.bucket, month, kind: "deposit" });
-      if (exists) { skipped += 1; continue; }
+      if (exists) { skippedMonths += 1; continue; }
       await Contribution.create({
         bucket: p.bucket,
         month,
@@ -74,7 +88,10 @@ async function run() {
     }
   }
 
-  console.log(`Done. Created ${created} deposit(s), skipped ${skipped} existing.`);
+  console.log(
+    `Done. Created ${created} deposit(s); skipped ${skippedGoals} goal(s) already seeded` +
+    (force ? `, ${skippedMonths} existing month(s).` : ".")
+  );
   await mongoose.disconnect();
   process.exit(0);
 }

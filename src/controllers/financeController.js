@@ -155,12 +155,30 @@ export const listBudgetItems = async (req, res) => {
 
 export const addBudgetItem = async (req, res) => {
   try {
-    const { name, amount, spent } = req.body;
-    const item = new BudgetItem({ name, amount, spent });
+    const { name, amount, spent, priority, order } = req.body;
+    const item = new BudgetItem({ name, amount, spent, priority, order });
     const saved = await item.save();
     return res.status(201).json(withId(saved));
   } catch (error) {
     return res.status(500).json({ error: `Error creating budget item, ${error}` });
+  }
+};
+
+// Bulk reorder — set each item's `order` to its index in the given id list.
+export const reorderBudgetItems = async (req, res) => {
+  try {
+    const { ids } = req.body;
+    if (!Array.isArray(ids)) {
+      return res.status(400).json({ message: "An array of ids is required" });
+    }
+    await Promise.all(
+      ids
+        .filter((id) => mongoose.Types.ObjectId.isValid(id))
+        .map((id, index) => BudgetItem.updateOne({ _id: id }, { $set: { order: index } }))
+    );
+    return res.status(200).json({ message: "Reordered" });
+  } catch (error) {
+    return res.status(500).json({ error: `Error reordering budget items, ${error}` });
   }
 };
 
@@ -174,10 +192,12 @@ export const updateBudgetItem = async (req, res) => {
     if (!item) {
       return res.status(404).json({ error: "Budget item doesn't exist!" });
     }
-    const { name, amount, spent } = req.body;
+    const { name, amount, spent, priority, order } = req.body;
     if (name !== undefined) item.name = name;
     if (amount !== undefined) item.amount = amount;
     if (spent !== undefined) item.spent = spent;
+    if (priority !== undefined) item.priority = priority;
+    if (order !== undefined) item.order = order;
     const updated = await item.save();
     return res.status(200).json(withId(updated));
   } catch (error) {

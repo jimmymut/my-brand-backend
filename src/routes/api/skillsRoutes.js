@@ -61,7 +61,7 @@ skillRouter.get("/", getAllSkills);
  *       500:
  *         description: Internal error
  */
-skillRouter.post("/", authorized, isAdmin, validateSkill, upload.single("icon"), createSkill);
+skillRouter.post("/", authorized, isAdmin, upload.single("icon"), validateSkill, createSkill);
 
 /**
  * @swagger
@@ -100,7 +100,7 @@ skillRouter.post("/", authorized, isAdmin, validateSkill, upload.single("icon"),
  *       500:
  *         description: Internal error
  */
-skillRouter.patch("/:id", authorized, isAdmin, validateUpdateSkill, upload.single("icon"), updateSkill);
+skillRouter.patch("/:id", authorized, isAdmin, upload.single("icon"), validateUpdateSkill, updateSkill);
 
 /**
  * @swagger

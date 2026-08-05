@@ -20,11 +20,16 @@ const PLAN = [
 
 const START = "2025-01";
 
+// Months from `start` through the LAST COMPLETED month (the current month is
+// deliberately excluded — this month's saving hasn't happened yet, so it stays
+// open/"due" until you record it).
 function monthsFrom(start) {
   const [sy, sm] = start.split("-").map((n) => parseInt(n, 10));
   const now = new Date();
-  const ey = now.getFullYear();
-  const em = now.getMonth() + 1;
+  let ey = now.getFullYear();
+  let em = now.getMonth() + 1;
+  em -= 1; // step back to last month
+  if (em < 1) { em = 12; ey -= 1; }
   const out = [];
   let y = sy;
   let m = sm;

@@ -8,6 +8,7 @@ import {
   removeTx,
   addContribution,
   updateContribution,
+  removeContribution,
   listBudgetItems,
   addBudgetItem,
   updateBudgetItem,
@@ -31,6 +32,7 @@ financeRouter.delete("/transactions/:id", removeTx);
 
 financeRouter.post("/contributions", addContribution);
 financeRouter.patch("/contributions/:id", updateContribution);
+financeRouter.delete("/contributions/:id", removeContribution);
 
 financeRouter.get("/budget-items", listBudgetItems);
 financeRouter.post("/budget-items", addBudgetItem);

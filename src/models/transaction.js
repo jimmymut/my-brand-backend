@@ -20,6 +20,11 @@ const transactionSchema = mongoose.Schema(
       type: String,
       default: "",
     },
+    // account (by name) the money landed in (income) or was paid from (expense)
+    account: {
+      type: String,
+      default: "",
+    },
   },
   { timestamps: true }
 );

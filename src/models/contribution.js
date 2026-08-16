@@ -15,8 +15,14 @@ const contributionSchema = mongoose.Schema(
     date: {
       type: String,
     },
-    // Where the money is held/allocated (e.g. "Ejo Heza", "BK").
+    // Where the money is held/allocated — the savings pot (e.g. "Ejo Heza", "BK").
     account: {
+      type: String,
+      default: "",
+    },
+    // The spendable wallet the money moved through: for a deposit it's where the
+    // money was PAID FROM; for a withdrawal it's where it was RETURNED TO.
+    wallet: {
       type: String,
       default: "",
     },

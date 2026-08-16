@@ -4,6 +4,7 @@ import Contribution from "../models/contribution.js";
 import BudgetItem from "../models/budgetItem.js";
 import Debt from "../models/debt.js";
 import Goal from "../models/goal.js";
+import Account from "../models/account.js";
 
 const withId = (doc) => {
   const obj = doc.toObject();
@@ -21,12 +22,13 @@ const debtWithId = (doc) => {
 
 export const getState = async (req, res) => {
   try {
-    const [tx, contribs, budgetItems, debts, goals] = await Promise.all([
+    const [tx, contribs, budgetItems, debts, goals, accounts] = await Promise.all([
       Transaction.find(),
       Contribution.find(),
       BudgetItem.find(),
       Debt.find(),
       Goal.find(),
+      Account.find(),
     ]);
     return res.status(200).json({
       tx: tx.map(withId),
@@ -34,6 +36,7 @@ export const getState = async (req, res) => {
       budgetItems: budgetItems.map(withId),
       debts: debts.map(debtWithId),
       goals: goals.map(withId),
+      accounts: accounts.map(withId),
     });
   } catch (error) {
     return res.status(500).json({ error: `Error fetching finance state, ${error}` });
@@ -42,8 +45,8 @@ export const getState = async (req, res) => {
 
 export const addTx = async (req, res) => {
   try {
-    const { kind, amount, category, desc, date } = req.body;
-    const tx = new Transaction({ kind, amount, category, desc, date });
+    const { kind, amount, category, desc, date, account } = req.body;
+    const tx = new Transaction({ kind, amount, category, desc, date, account });
     const saved = await tx.save();
     return res.status(201).json(withId(saved));
   } catch (error) {
@@ -61,12 +64,13 @@ export const updateTx = async (req, res) => {
     if (!tx) {
       return res.status(404).json({ error: "Transaction doesn't exist!" });
     }
-    const { kind, amount, category, desc, date } = req.body;
+    const { kind, amount, category, desc, date, account } = req.body;
     if (kind !== undefined) tx.kind = kind;
     if (amount !== undefined) tx.amount = amount;
     if (category !== undefined) tx.category = category;
     if (desc !== undefined) tx.desc = desc;
     if (date !== undefined) tx.date = date;
+    if (account !== undefined) tx.account = account;
     const updated = await tx.save();
     return res.status(200).json(withId(updated));
   } catch (error) {
@@ -93,10 +97,11 @@ export const removeTx = async (req, res) => {
 
 export const addContribution = async (req, res) => {
   try {
-    const { month, bucket, amount, date, account, kind } = req.body;
+    const { month, bucket, amount, date, account, wallet, kind } = req.body;
     const contrib = new Contribution({
       month, bucket, amount, date,
       account: account || "",
+      wallet: wallet || "",
       kind: kind === "withdrawal" ? "withdrawal" : "deposit",
     });
     const saved = await contrib.save();
@@ -116,12 +121,13 @@ export const updateContribution = async (req, res) => {
     if (!contrib) {
       return res.status(404).json({ error: "Contribution doesn't exist!" });
     }
-    const { month, bucket, amount, date, account, kind } = req.body;
+    const { month, bucket, amount, date, account, wallet, kind } = req.body;
     if (month !== undefined) contrib.month = month;
     if (bucket !== undefined) contrib.bucket = bucket;
     if (amount !== undefined) contrib.amount = amount;
     if (date !== undefined) contrib.date = date;
     if (account !== undefined) contrib.account = account;
+    if (wallet !== undefined) contrib.wallet = wallet;
     if (kind !== undefined) contrib.kind = kind === "withdrawal" ? "withdrawal" : "deposit";
     const updated = await contrib.save();
     return res.status(200).json(withId(updated));
@@ -380,6 +386,65 @@ export const removeGoal = async (req, res) => {
     return res.status(204).json({ message: "Goal deleted" });
   } catch (error) {
     return res.status(500).json({ error: `Error deleting goal, ${error}` });
+  }
+};
+
+/* --------------------------------------------------------------- ACCOUNTS */
+export const addAccount = async (req, res) => {
+  try {
+    const { name, type, color, openingBalance, order } = req.body;
+    const account = new Account({ name, type, color, openingBalance, order });
+    const saved = await account.save();
+    return res.status(201).json(withId(saved));
+  } catch (error) {
+    return res.status(500).json({ error: `Error creating account, ${error}` });
+  }
+};
+
+export const updateAccount = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid id" });
+    }
+    const account = await Account.findById(id);
+    if (!account) {
+      return res.status(404).json({ error: "Account doesn't exist!" });
+    }
+    const prevName = account.name;
+    const fields = ["name", "type", "color", "openingBalance", "order", "archived"];
+    fields.forEach((f) => { if (req.body[f] !== undefined) account[f] = req.body[f]; });
+    const updated = await account.save();
+    // records reference accounts by name — cascade a rename so balances stay intact
+    if (req.body.name !== undefined && req.body.name !== prevName && prevName) {
+      await Promise.all([
+        Transaction.updateMany({ account: prevName }, { $set: { account: req.body.name } }),
+        Contribution.updateMany({ account: prevName }, { $set: { account: req.body.name } }),
+        Contribution.updateMany({ wallet: prevName }, { $set: { wallet: req.body.name } }),
+        Goal.updateMany({ account: prevName }, { $set: { account: req.body.name } }),
+      ]);
+    }
+    return res.status(200).json(withId(updated));
+  } catch (error) {
+    return res.status(500).json({ error: `Error updating account, ${error}` });
+  }
+};
+
+export const removeAccount = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid id" });
+    }
+    const exist = await Account.findById(id);
+    if (!exist) {
+      return res.status(404).json({ error: "Account not found!" });
+    }
+    await Account.deleteOne({ _id: id });
+    // records keep their (now unmanaged) account name — they show under it as-is
+    return res.status(204).json({ message: "Account deleted" });
+  } catch (error) {
+    return res.status(500).json({ error: `Error deleting account, ${error}` });
   }
 };
 

@@ -18,6 +18,12 @@ const budgetItemSchema = mongoose.Schema(
       enum: ["high", "medium", "low"],
       default: "low",
     },
+    // which month this plan item belongs to ("YYYY-MM"). Empty = legacy items,
+    // treated as the current month by the frontend.
+    month: {
+      type: String,
+      default: "",
+    },
     // manual display position (drag-to-reorder); lower = higher in the list
     order: {
       type: Number,

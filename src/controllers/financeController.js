@@ -158,12 +158,51 @@ export const listBudgetItems = async (req, res) => {
 
 export const addBudgetItem = async (req, res) => {
   try {
-    const { name, amount, spent, priority, order } = req.body;
-    const item = new BudgetItem({ name, amount, spent, priority, order });
+    const { name, amount, spent, priority, order, month } = req.body;
+    const item = new BudgetItem({ name, amount, spent, priority, order, month });
     const saved = await item.save();
     return res.status(201).json(withId(saved));
   } catch (error) {
     return res.status(500).json({ error: `Error creating budget item, ${error}` });
+  }
+};
+
+// Clone the given plan items into a month (spent reset to 0). The caller passes
+// explicit item ids (so legacy month-less items are handled exactly as the UI
+// groups them). Copies are appended after any items already in the target month.
+export const copyBudgetMonth = async (req, res) => {
+  try {
+    const { itemIds, toMonth } = req.body;
+    if (!toMonth || !Array.isArray(itemIds) || !itemIds.length) {
+      return res.status(400).json({ message: "itemIds and toMonth are required" });
+    }
+    const valid = itemIds.filter((id) => mongoose.Types.ObjectId.isValid(id));
+    const source = await BudgetItem.find({ _id: { $in: valid } });
+    if (!source.length) {
+      return res.status(200).json([]);
+    }
+    const existing = await BudgetItem.find({ month: toMonth });
+    let order = existing.reduce((m, x) => Math.max(m, x.order || 0), -1) + 1;
+    // skip any source item whose name already exists in the target month
+    const norm = (s) => String(s || "").trim().toLowerCase();
+    const taken = new Set(existing.map((x) => norm(x.name)));
+    // keep the order the caller listed the ids in
+    const byId = new Map(source.map((it) => [it._id.toString(), it]));
+    const ordered = valid.map((id) => byId.get(id)).filter(Boolean);
+    const toCopy = [];
+    for (const it of ordered) {
+      const key = norm(it.name);
+      if (taken.has(key)) continue; // already planned this month
+      taken.add(key); // also dedupe within this batch
+      toCopy.push({ name: it.name, amount: it.amount, spent: 0, priority: it.priority, month: toMonth, order: order++ });
+    }
+    if (!toCopy.length) {
+      return res.status(200).json([]);
+    }
+    const copies = await BudgetItem.insertMany(toCopy);
+    return res.status(201).json(copies.map(withId));
+  } catch (error) {
+    return res.status(500).json({ error: `Error copying budget, ${error}` });
   }
 };
 
@@ -195,12 +234,13 @@ export const updateBudgetItem = async (req, res) => {
     if (!item) {
       return res.status(404).json({ error: "Budget item doesn't exist!" });
     }
-    const { name, amount, spent, priority, order } = req.body;
+    const { name, amount, spent, priority, order, month } = req.body;
     if (name !== undefined) item.name = name;
     if (amount !== undefined) item.amount = amount;
     if (spent !== undefined) item.spent = spent;
     if (priority !== undefined) item.priority = priority;
     if (order !== undefined) item.order = order;
+    if (month !== undefined) item.month = month;
     const updated = await item.save();
     return res.status(200).json(withId(updated));
   } catch (error) {

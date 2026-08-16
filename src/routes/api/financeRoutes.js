@@ -11,6 +11,7 @@ import {
   removeContribution,
   listBudgetItems,
   addBudgetItem,
+  copyBudgetMonth,
   reorderBudgetItems,
   updateBudgetItem,
   removeBudgetItem,
@@ -40,6 +41,7 @@ financeRouter.delete("/contributions/:id", removeContribution);
 
 financeRouter.get("/budget-items", listBudgetItems);
 financeRouter.post("/budget-items", addBudgetItem);
+financeRouter.post("/budget-items/copy", copyBudgetMonth); // before :id routes
 financeRouter.patch("/budget-items/reorder", reorderBudgetItems); // before :id so "reorder" isn't matched as an id
 financeRouter.patch("/budget-items/:id", updateBudgetItem);
 financeRouter.delete("/budget-items/:id", removeBudgetItem);

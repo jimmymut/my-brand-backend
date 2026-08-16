@@ -26,6 +26,9 @@ import {
   addAccount,
   updateAccount,
   removeAccount,
+  addAsset,
+  updateAsset,
+  removeAsset,
 } from "../../controllers/financeController";
 
 const financeRouter = express.Router();
@@ -62,5 +65,9 @@ financeRouter.delete("/goals/:id", removeGoal);
 financeRouter.post("/accounts", addAccount);
 financeRouter.patch("/accounts/:id", updateAccount);
 financeRouter.delete("/accounts/:id", removeAccount);
+
+financeRouter.post("/assets", addAsset);
+financeRouter.patch("/assets/:id", updateAsset);
+financeRouter.delete("/assets/:id", removeAsset);
 
 export default financeRouter;

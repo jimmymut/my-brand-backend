@@ -5,6 +5,7 @@ import BudgetItem from "../models/budgetItem.js";
 import Debt from "../models/debt.js";
 import Goal from "../models/goal.js";
 import Account from "../models/account.js";
+import Asset from "../models/asset.js";
 
 const withId = (doc) => {
   const obj = doc.toObject();
@@ -22,13 +23,14 @@ const debtWithId = (doc) => {
 
 export const getState = async (req, res) => {
   try {
-    const [tx, contribs, budgetItems, debts, goals, accounts] = await Promise.all([
+    const [tx, contribs, budgetItems, debts, goals, accounts, assets] = await Promise.all([
       Transaction.find(),
       Contribution.find(),
       BudgetItem.find(),
       Debt.find(),
       Goal.find(),
       Account.find(),
+      Asset.find(),
     ]);
     return res.status(200).json({
       tx: tx.map(withId),
@@ -37,6 +39,7 @@ export const getState = async (req, res) => {
       debts: debts.map(debtWithId),
       goals: goals.map(withId),
       accounts: accounts.map(withId),
+      assets: assets.map(withId),
     });
   } catch (error) {
     return res.status(500).json({ error: `Error fetching finance state, ${error}` });
@@ -445,6 +448,60 @@ export const removeAccount = async (req, res) => {
     return res.status(204).json({ message: "Account deleted" });
   } catch (error) {
     return res.status(500).json({ error: `Error deleting account, ${error}` });
+  }
+};
+
+/* ---------------------------------------------------------------- ASSETS */
+const ASSET_FIELDS = [
+  "name", "type", "value", "cost", "acquiredDate", "location", "size", "sizeUnit",
+  "upi", "plate", "year", "notes", "color", "order", "archived", "wallet",
+  "sold", "soldWallet", "soldAmount", "soldDate",
+];
+
+export const addAsset = async (req, res) => {
+  try {
+    const payload = {};
+    ASSET_FIELDS.forEach((f) => { if (req.body[f] !== undefined) payload[f] = req.body[f]; });
+    const asset = new Asset(payload);
+    const saved = await asset.save();
+    return res.status(201).json(withId(saved));
+  } catch (error) {
+    return res.status(500).json({ error: `Error creating asset, ${error}` });
+  }
+};
+
+export const updateAsset = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid id" });
+    }
+    const asset = await Asset.findById(id);
+    if (!asset) {
+      return res.status(404).json({ error: "Asset doesn't exist!" });
+    }
+    ASSET_FIELDS.forEach((f) => { if (req.body[f] !== undefined) asset[f] = req.body[f]; });
+    const updated = await asset.save();
+    return res.status(200).json(withId(updated));
+  } catch (error) {
+    return res.status(500).json({ error: `Error updating asset, ${error}` });
+  }
+};
+
+export const removeAsset = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid id" });
+    }
+    const exist = await Asset.findById(id);
+    if (!exist) {
+      return res.status(404).json({ error: "Asset not found!" });
+    }
+    await Asset.deleteOne({ _id: id });
+    return res.status(204).json({ message: "Asset deleted" });
+  } catch (error) {
+    return res.status(500).json({ error: `Error deleting asset, ${error}` });
   }
 };
 

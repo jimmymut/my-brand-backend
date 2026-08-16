@@ -3,6 +3,7 @@ import Transaction from "../models/transaction.js";
 import Contribution from "../models/contribution.js";
 import BudgetItem from "../models/budgetItem.js";
 import Debt from "../models/debt.js";
+import Goal from "../models/goal.js";
 
 const withId = (doc) => {
   const obj = doc.toObject();
@@ -20,17 +21,19 @@ const debtWithId = (doc) => {
 
 export const getState = async (req, res) => {
   try {
-    const [tx, contribs, budgetItems, debts] = await Promise.all([
+    const [tx, contribs, budgetItems, debts, goals] = await Promise.all([
       Transaction.find(),
       Contribution.find(),
       BudgetItem.find(),
       Debt.find(),
+      Goal.find(),
     ]);
     return res.status(200).json({
       tx: tx.map(withId),
       contribs: contribs.map(withId),
       budgetItems: budgetItems.map(withId),
       debts: debts.map(debtWithId),
+      goals: goals.map(withId),
     });
   } catch (error) {
     return res.status(500).json({ error: `Error fetching finance state, ${error}` });
@@ -287,6 +290,56 @@ export const removeDebt = async (req, res) => {
     return res.status(204).json({ message: "Debt deleted" });
   } catch (error) {
     return res.status(500).json({ error: `Error deleting debt, ${error}` });
+  }
+};
+
+/* ------------------------------------------------------------------ GOALS */
+export const addGoal = async (req, res) => {
+  try {
+    const { name, short, sub, target, color, account, startMonth, order, targetSchedule, overrideFor } = req.body;
+    const goal = new Goal({ name, short, sub, target, color, account, startMonth, order, targetSchedule, overrideFor });
+    const saved = await goal.save();
+    return res.status(201).json(withId(saved));
+  } catch (error) {
+    return res.status(500).json({ error: `Error creating goal, ${error}` });
+  }
+};
+
+export const updateGoal = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid id" });
+    }
+    const goal = await Goal.findById(id);
+    if (!goal) {
+      return res.status(404).json({ error: "Goal doesn't exist!" });
+    }
+    const fields = ["name", "short", "sub", "target", "color", "account", "startMonth", "order", "targetSchedule", "overrideFor"];
+    fields.forEach((f) => { if (req.body[f] !== undefined) goal[f] = req.body[f]; });
+    const updated = await goal.save();
+    return res.status(200).json(withId(updated));
+  } catch (error) {
+    return res.status(500).json({ error: `Error updating goal, ${error}` });
+  }
+};
+
+export const removeGoal = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid id" });
+    }
+    const exist = await Goal.findById(id);
+    if (!exist) {
+      return res.status(404).json({ error: "Goal not found!" });
+    }
+    await Goal.deleteOne({ _id: id });
+    // also drop this goal's contributions so they don't dangle
+    await Contribution.deleteMany({ bucket: id });
+    return res.status(204).json({ message: "Goal deleted" });
+  } catch (error) {
+    return res.status(500).json({ error: `Error deleting goal, ${error}` });
   }
 };
 

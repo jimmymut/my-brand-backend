@@ -19,6 +19,9 @@ import {
   updateDebt,
   removeDebt,
   addDebtPayment,
+  addGoal,
+  updateGoal,
+  removeGoal,
 } from "../../controllers/financeController";
 
 const financeRouter = express.Router();
@@ -46,5 +49,9 @@ financeRouter.post("/debts", addDebt);
 financeRouter.patch("/debts/:id", updateDebt);
 financeRouter.delete("/debts/:id", removeDebt);
 financeRouter.post("/debts/:id/payments", addDebtPayment);
+
+financeRouter.post("/goals", addGoal);
+financeRouter.patch("/goals/:id", updateGoal);
+financeRouter.delete("/goals/:id", removeGoal);
 
 export default financeRouter;

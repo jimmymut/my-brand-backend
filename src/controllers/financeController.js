@@ -286,11 +286,11 @@ export const listDebts = async (req, res) => {
 
 export const addDebt = async (req, res) => {
   try {
-    const { direction, name, amount, date, due, desc, payments } = req.body;
+    const { direction, name, amount, date, due, desc, account, payments } = req.body;
     const debt = new Debt({
       direction: direction === "lent" ? "lent" : "borrowed",
-      name, amount, date, due, desc,
-      payments: Array.isArray(payments) ? payments.map((p) => ({ amount: p.amount, date: p.date })) : [],
+      name, amount, date, due, desc, account: account || "",
+      payments: Array.isArray(payments) ? payments.map((p) => ({ amount: p.amount, date: p.date, account: p.account || "" })) : [],
     });
     const saved = await debt.save();
     return res.status(201).json(debtWithId(saved));
@@ -309,15 +309,16 @@ export const updateDebt = async (req, res) => {
     if (!debt) {
       return res.status(404).json({ error: "Debt doesn't exist!" });
     }
-    const { direction, name, amount, date, due, desc, payments } = req.body;
+    const { direction, name, amount, date, due, desc, account, payments } = req.body;
     if (direction !== undefined) debt.direction = direction === "lent" ? "lent" : "borrowed";
     if (name !== undefined) debt.name = name;
     if (amount !== undefined) debt.amount = amount;
     if (date !== undefined) debt.date = date;
     if (due !== undefined) debt.due = due;
     if (desc !== undefined) debt.desc = desc;
+    if (account !== undefined) debt.account = account;
     // payments are preserved unless explicitly replaced
-    if (Array.isArray(payments)) debt.payments = payments.map((p) => ({ amount: p.amount, date: p.date }));
+    if (Array.isArray(payments)) debt.payments = payments.map((p) => ({ amount: p.amount, date: p.date, account: p.account || "" }));
     const updated = await debt.save();
     return res.status(200).json(debtWithId(updated));
   } catch (error) {
@@ -515,8 +516,8 @@ export const addDebtPayment = async (req, res) => {
     if (!debt) {
       return res.status(404).json({ error: "Debt not found!" });
     }
-    const { amount, date } = req.body;
-    debt.payments.push({ amount, date });
+    const { amount, date, account } = req.body;
+    debt.payments.push({ amount, date, account: account || "" });
     const updated = await debt.save();
     return res.status(200).json(debtWithId(updated));
   } catch (error) {

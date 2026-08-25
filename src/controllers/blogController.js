@@ -159,58 +159,58 @@ const allComments = async (req, res) => {
 };
 
 const numberOfBlogComments = async (req, res) => {
-  const id = req.params.id;
-  if (!mongoose.Types.ObjectId.isValid(id)) {
-    return res.status(400).send("Invalid blog id");
+  try {
+    const id = req.params.id;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).send("Invalid blog id");
+    }
+    const exist = await Blog.findById(id);
+    if (!exist) {
+      return res.status(404).json({ error: "Blog doesn't exist!" });
+    }
+    const result = await Comment.countDocuments({ blogId: id });
+    return res.status(200).json({ comments: result });
+  } catch (err) {
+    return res.status(500).json({ error: `Error occured! ${err}` });
   }
-  const exist = await Blog.findById(id);
-  if (!exist) {
-    return res.status(404).json({ error: "Blog doesn't exist!" });
-  }
-
-  Comment.countDocuments({ blogId: id })
-    .then((result) => {
-      return res.status(200).json({ comments: result });
-    })
-    .catch((err) => res.status(500).json({ error: `Error occured! ${err}` }));
 };
 
 const addComment = async (req, res) => {
-  const id = req.params.id;
-  const exist = await Blog.findById(id);
-  if (!exist) {
-    return res.status(404).json({ error: "Blog doesn't exist!" });
-  }
-  const newUserId = req.user._id;
-  const newcomment = new Comment({
-    comment: req.body.comment,
-    blogId: id,
-    userId: newUserId,
-    user: newUserId,
-  });
+  try {
+    const id = req.params.id;
+    const exist = await Blog.findById(id);
+    if (!exist) {
+      return res.status(404).json({ error: "Blog doesn't exist!" });
+    }
+    const newUserId = req.user._id;
+    const newcomment = new Comment({
+      comment: req.body.comment,
+      blogId: id,
+      userId: newUserId,
+      user: newUserId,
+    });
 
-  newcomment
-    .save()
-    .then(async (savedCmt) => {
-      savedCmt.populate({
-        path: "user",
-        select: ["firstName", "lastName", "proPic"],
-      });
-      Blog.findByIdAndUpdate(id, { $push: { comments: newcomment._id } })
-        .then(() => {
-          return res.status(200).json(savedCmt);
-        })
-        .catch((error) => {
-          return res
-            .status(500)
-            .json({ error: `Error occurred on blog update ${error}` });
-        });
-    })
-    .catch((error) => {
+    let savedCmt;
+    try {
+      savedCmt = await newcomment.save();
+    } catch (error) {
+      return res.status(500).json({ error: `Failed to save a comment ${error}` });
+    }
+    try {
+      await Blog.findByIdAndUpdate(id, { $push: { comments: newcomment._id } });
+    } catch (error) {
       return res
         .status(500)
-        .json({ error: `Failed to save a comment ${error}` });
+        .json({ error: `Error occurred on blog update ${error}` });
+    }
+    await savedCmt.populate({
+      path: "user",
+      select: ["firstName", "lastName", "proPic"],
     });
+    return res.status(200).json(savedCmt);
+  } catch (error) {
+    return res.status(500).json({ error: `Error occured! ${error}` });
+  }
 };
 
 const deleteComment = async (req, res) => {
@@ -272,95 +272,55 @@ const getSingleComment = async (req, res) => {
 };
 
 const likeBlog = async (req, res) => {
-  const id = req.params.id;
-  if (!mongoose.Types.ObjectId.isValid(id)) {
-    return res.status(400).send("Invalid id");
-  }
-  const exist = await Blog.findById(id);
-  if (!exist) {
-    return res.status(404).json({ error: "Blog doesn't exist!" });
-  }
-  const newUserId = req.user._id;
-  Like.findOne({ $and: [{ blogId: id }, { userId: newUserId }] }).then(
-    async (liked) => {
-      if (liked) {
-        const like_id = liked._id;
-        Blog.updateOne(
-          { _id: id },
-          {
-            $pull: {
-              likes: like_id,
-            },
-          },
-          { new: true }
-        )
-          .then(async () => {
-            Like.findOneAndDelete({ _id: like_id })
-              .then(async () => {
-                // const blgLikes = await Like.countDocuments({ blogId: id });
-                return res
-                  .status(200)
-                  .json({
-                    like: liked,
-                    message: "Unliked this blog",
-                    type: "unlike",
-                  });
-              })
-              .catch((error) => {
-                return res
-                  .status(500)
-                  .json({ error: `Error occured! ${error}` });
-              });
-          })
-          .catch((error) => {
-            return res.status(500).json({ error: `Error occured! ${error}` });
-          });
-      } else {
-        const like = new Like({
-          blogId: id,
-          userId: req.user._id,
-        });
-        await like.save().then(async (saved) => {
-          await Blog.updateOne(
-            { _id: id },
-            { $push: { likes: like._id } },
-            { new: true }
-          )
-            .then(async () => {
-              // const blgLikes = await Like.countDocuments({ blogId: id });
-              return res
-                .status(200)
-                .json({
-                  like: saved,
-                  type: "like",
-                  message: "Liked this blog",
-                });
-            })
-            .catch((error) => {
-              return res.status(500).json({ error: `Error occured! ${error}` });
-            });
-        });
-      }
+  try {
+    const id = req.params.id;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).send("Invalid id");
     }
-  );
+    const exist = await Blog.findById(id);
+    if (!exist) {
+      return res.status(404).json({ error: "Blog doesn't exist!" });
+    }
+    const newUserId = req.user._id;
+    const liked = await Like.findOne({ $and: [{ blogId: id }, { userId: newUserId }] });
+    if (liked) {
+      const like_id = liked._id;
+      await Blog.updateOne({ _id: id }, { $pull: { likes: like_id } }, { new: true });
+      await Like.findOneAndDelete({ _id: like_id });
+      return res.status(200).json({
+        like: liked,
+        message: "Unliked this blog",
+        type: "unlike",
+      });
+    }
+    const like = new Like({ blogId: id, userId: newUserId });
+    const saved = await like.save();
+    await Blog.updateOne({ _id: id }, { $push: { likes: like._id } }, { new: true });
+    return res.status(200).json({
+      like: saved,
+      type: "like",
+      message: "Liked this blog",
+    });
+  } catch (error) {
+    return res.status(500).json({ error: `Error occured! ${error}` });
+  }
 };
 
 const likesOnBlog = async (req, res) => {
-  const id = req.params.id;
-  if (!mongoose.Types.ObjectId.isValid(id)) {
-    return res.status(400).send("Invalid id");
+  try {
+    const id = req.params.id;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).send("Invalid id");
+    }
+    const exist = await Blog.findById(id);
+    if (!exist) {
+      return res.status(404).json({ error: "Blog doesn't exist!" });
+    }
+    const blogLikes = await Like.countDocuments({ blogId: id });
+    return res.status(200).json({ likes: blogLikes });
+  } catch (error) {
+    return res.status(500).json({ error: `Error occured! ${error}` });
   }
-  const exist = await Blog.findById(id);
-  if (!exist) {
-    return res.status(404).json({ error: "Blog doesn't exist!" });
-  }
-  await Like.countDocuments({ blogId: id })
-    .then((blogLikes) => {
-      return res.status(200).json({ likes: blogLikes });
-    })
-    .catch((error) => {
-      return res.status(500).json({ error: `Error occured! ${error}` });
-    });
 };
 
 export {

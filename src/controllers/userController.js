@@ -351,7 +351,7 @@ export class UserController {
           message: "Invalid id",
         });
       }
-      if (new mongoose.Types.ObjectId(id) === req.user._id) {
+      if (String(id) === String(req.user._id)) {
         return res.status(403).json({
           message: "You can not change your own role!",
         });

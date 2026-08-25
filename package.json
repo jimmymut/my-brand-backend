@@ -20,9 +20,23 @@
     }
   },
   "jest": {
+    "testEnvironment": "node",
     "testTimeout": 20000,
     "resetMocks": true,
-    "restoreMocks": true
+    "restoreMocks": true,
+    "setupFiles": [
+      "<rootDir>/__test__/jest.setup.js"
+    ],
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "/dist/"
+    ],
+    "collectCoverageFrom": [
+      "src/**/*.js"
+    ],
+    "coveragePathIgnorePatterns": [
+      "/node_modules/"
+    ]
   },
   "repository": {
     "type": "git",

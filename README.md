@@ -16,3 +16,12 @@ You can find the documentation [here.](https://jimmy-portfolio-backend.up.railwa
 1. Node.js
 2. Express.js
 3. mongoDB
+
+# Testing
+```
+npm test
+```
+The suite in `__test__/` runs against the Express app with **supertest** and needs no database or network:
+every Mongoose query is mocked with `jest.spyOn`, and Cloudinary, nodemailer, Google OAuth and the
+rate limiter are stubbed. Test-only environment values are set in `__test__/jest.setup.js`, so no `.env`
+is required to run the tests. Shared helpers (`authAs`, `mockSave`, `query`, ...) live in `__test__/helpers/`.

@@ -1,33 +1,28 @@
 version: 2.1
 
 orbs:
-  #coveralls: coveralls/coveralls@1.0.6
-  coveralls: solven/coveralls@0.0.1
-  node: circleci/node@5.0.2
+  node: circleci/node@5.2.0
 
 jobs:
   build-and-test:
     docker:
+      # matches .node-version / package.json engines
       - image: cimg/node:20.11
     steps:
       - checkout
+      # runs `npm ci` (the postinstall hook builds src -> dist)
       - node/install-packages:
-        pkg-manager: npm
+          pkg-manager: npm
       - run:
-          name: Install dependencies
-          command: npm install
-      - run:
-          name: Run unit testing
-          environment:
-          TEST_DB: TEST_DB
-          SECRET_KEY: SECRET_KEY
-          CLOUD_NAME: CLOUD_NAME
-          CLOUDINARY_API_KEY: CLOUDINARY_API_KEY
-          CLOUDINARY_API_SECRET: CLOUDINARY_API_SECRET
+          name: Run unit tests with coverage
+          # the suite is fully mocked: no database, network or secrets needed
           command: npm test
+      - run:
+          name: Upload coverage to Coveralls
+          # uses the `coveralls` devDependency; needs COVERALLS_REPO_TOKEN in the
+          # CircleCI project environment variables (Project Settings > Environment Variables)
+          command: cat ./coverage/lcov.info | npx coveralls
 
-      - coveralls/upload:
-        path: ./coverage/lcov.info
 workflows:
   test-my-brand-api:
     jobs:

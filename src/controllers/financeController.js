@@ -346,8 +346,8 @@ export const removeDebt = async (req, res) => {
 /* ------------------------------------------------------------------ GOALS */
 export const addGoal = async (req, res) => {
   try {
-    const { name, short, sub, target, color, account, startMonth, order, targetSchedule, overrideFor } = req.body;
-    const goal = new Goal({ name, short, sub, target, color, account, startMonth, order, targetSchedule, overrideFor });
+    const { name, short, sub, target, color, account, startMonth, order, targetSchedule, overrideFor, type, endMonth, deadline } = req.body;
+    const goal = new Goal({ name, short, sub, target, color, account, startMonth, order, targetSchedule, overrideFor, type, endMonth, deadline });
     const saved = await goal.save();
     return res.status(201).json(withId(saved));
   } catch (error) {
@@ -365,7 +365,7 @@ export const updateGoal = async (req, res) => {
     if (!goal) {
       return res.status(404).json({ error: "Goal doesn't exist!" });
     }
-    const fields = ["name", "short", "sub", "target", "color", "account", "startMonth", "order", "targetSchedule", "overrideFor"];
+    const fields = ["name", "short", "sub", "target", "color", "account", "startMonth", "order", "targetSchedule", "overrideFor", "type", "endMonth", "deadline"];
     fields.forEach((f) => { if (req.body[f] !== undefined) goal[f] = req.body[f]; });
     const updated = await goal.save();
     return res.status(200).json(withId(updated));

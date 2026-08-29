@@ -15,8 +15,14 @@ const goalSchema = mongoose.Schema(
     target: { type: Number, default: 0 },
     color: { type: String, default: "#34D399" },
     account: { type: String, default: "" },
+    // "monthly" = recurring monthly target; "target" = one lump sum by a deadline
+    type: { type: String, enum: ["monthly", "target"], default: "monthly" },
     // the month this goal begins counting toward savings/debt ("YYYY-MM")
     startMonth: { type: String, default: "" },
+    // monthly goals: last month they count ("" = open-ended, run indefinitely)
+    endMonth: { type: String, default: "" },
+    // target goals: the date the lump sum should be reached by ("YYYY-MM-DD")
+    deadline: { type: String, default: "" },
     order: { type: Number, default: 0 },
     // monthly-target changes over time: each entry sets the target from `month`
     // onward. The effective target for a month is the latest entry <= that month

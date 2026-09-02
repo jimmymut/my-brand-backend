@@ -6,6 +6,7 @@ import Debt from "../models/debt.js";
 import Goal from "../models/goal.js";
 import Account from "../models/account.js";
 import Asset from "../models/asset.js";
+import Transfer from "../models/transfer.js";
 
 const withId = (doc) => {
   const obj = doc.toObject();
@@ -23,7 +24,7 @@ const debtWithId = (doc) => {
 
 export const getState = async (req, res) => {
   try {
-    const [tx, contribs, budgetItems, debts, goals, accounts, assets] = await Promise.all([
+    const [tx, contribs, budgetItems, debts, goals, accounts, assets, transfers] = await Promise.all([
       Transaction.find(),
       Contribution.find(),
       BudgetItem.find(),
@@ -31,6 +32,7 @@ export const getState = async (req, res) => {
       Goal.find(),
       Account.find(),
       Asset.find(),
+      Transfer.find(),
     ]);
     return res.status(200).json({
       tx: tx.map(withId),
@@ -40,6 +42,7 @@ export const getState = async (req, res) => {
       goals: goals.map(withId),
       accounts: accounts.map(withId),
       assets: assets.map(withId),
+      transfers: transfers.map(withId),
     });
   } catch (error) {
     return res.status(500).json({ error: `Error fetching finance state, ${error}` });
@@ -503,6 +506,53 @@ export const removeAsset = async (req, res) => {
     return res.status(204).json({ message: "Asset deleted" });
   } catch (error) {
     return res.status(500).json({ error: `Error deleting asset, ${error}` });
+  }
+};
+
+/* ------------------------------------------------------------- TRANSFERS */
+export const addTransfer = async (req, res) => {
+  try {
+    const { fromAccount, toAccount, amount, date, note } = req.body;
+    const transfer = new Transfer({ fromAccount, toAccount, amount, date, note });
+    const saved = await transfer.save();
+    return res.status(201).json(withId(saved));
+  } catch (error) {
+    return res.status(500).json({ error: `Error creating transfer, ${error}` });
+  }
+};
+
+export const updateTransfer = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid id" });
+    }
+    const transfer = await Transfer.findById(id);
+    if (!transfer) {
+      return res.status(404).json({ error: "Transfer doesn't exist!" });
+    }
+    ["fromAccount", "toAccount", "amount", "date", "note"].forEach((f) => { if (req.body[f] !== undefined) transfer[f] = req.body[f]; });
+    const updated = await transfer.save();
+    return res.status(200).json(withId(updated));
+  } catch (error) {
+    return res.status(500).json({ error: `Error updating transfer, ${error}` });
+  }
+};
+
+export const removeTransfer = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid id" });
+    }
+    const exist = await Transfer.findById(id);
+    if (!exist) {
+      return res.status(404).json({ error: "Transfer not found!" });
+    }
+    await Transfer.deleteOne({ _id: id });
+    return res.status(204).json({ message: "Transfer deleted" });
+  } catch (error) {
+    return res.status(500).json({ error: `Error deleting transfer, ${error}` });
   }
 };
 
